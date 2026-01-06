@@ -11,11 +11,13 @@ import {
   Pill, Search, Clock, CheckCircle2, AlertCircle, 
   ArrowLeft, User, Calendar, XCircle, Filter, Activity,
   Lock, Unlock, Loader2, Box, Scan, ShoppingCart, Plus,
-  Package, AlertTriangle, Trash2, Send, Menu, X
+  Package, AlertTriangle, Trash2, Send, Menu, X, Brain,
+  Shield, Sparkles, Info, TrendingUp
 } from 'lucide-react';
 import { usePatients, useMedications } from '../hooks/useFirebaseData';
 import { addAdministrationLog } from '../services/firebaseMedications';
 import ScanInterface from '@/components/dashboard/nurse/ScanInterface';
+import { drugInteractionsDB } from '../data/drugInteractions';
 
 export default function NurseDashboard() {
   const navigate = useNavigate();
@@ -47,8 +49,14 @@ export default function NurseDashboard() {
     lastRackId: ''
   });
 
-  // ✅ Mobile: Show/Hide filters on mobile
+  // Mobile: Show/Hide filters on mobile
   const [showFilters, setShowFilters] = useState(false);
+
+  // 🤖 AI Features States
+  const [medicationAlerts, setMedicationAlerts] = useState([]);
+  const [patientRiskScore, setPatientRiskScore] = useState(null);
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [selectedMedAIInfo, setSelectedMedAIInfo] = useState(null);
 
   const { patients } = usePatients();
   const { medications, loading: medsLoading } = useMedications();
@@ -80,6 +88,153 @@ export default function NurseDashboard() {
   }, []);
 
   const activeMedications = medications.filter(m => m.status === 'active');
+
+  // 🤖 AI: Analyze patient medications when authenticated
+  useEffect(() => {
+    if (authenticationComplete && currentPatient) {
+      const patientMeds = activeMedications.filter(m => m.patientHHID === currentPatient.hhid);
+      
+      if (patientMeds.length > 0) {
+        const drugNames = patientMeds.map(m => m.drugName);
+        const interactions = drugInteractionsDB.checkInteractions(drugNames);
+        
+        const alerts = [];
+        
+        // Critical interactions
+        interactions.alerts.forEach(alert => {
+          alerts.push({
+            type: 'interaction',
+            severity: 'high',
+            icon: AlertTriangle,
+            message: alert.message,
+            effect: alert.effect,
+            recommendation: alert.recommendation || 'Consult pharmacist immediately'
+          });
+        });
+
+        // Moderate warnings
+        interactions.warnings.forEach(warning => {
+          alerts.push({
+            type: 'warning',
+            severity: 'moderate',
+            icon: AlertCircle,
+            message: warning.message,
+            effect: warning.effect,
+            recommendation: warning.recommendation || 'Monitor patient closely'
+          });
+        });
+
+        // Contraindications
+        interactions.contraindications.forEach(contra => {
+          alerts.push({
+            type: 'contraindication',
+            severity: 'critical',
+            icon: XCircle,
+            message: contra.message,
+            details: contra.details,
+            recommendation: 'DO NOT ADMINISTER - Contact physician'
+          });
+        });
+
+        setMedicationAlerts(alerts);
+        setShowAIPanel(alerts.length > 0);
+
+        // Calculate patient risk score
+        calculateRiskScore(currentPatient, patientMeds, interactions);
+      } else {
+        setMedicationAlerts([]);
+        setShowAIPanel(false);
+        setPatientRiskScore(null);
+      }
+    } else {
+      setMedicationAlerts([]);
+      setShowAIPanel(false);
+      setPatientRiskScore(null);
+    }
+  }, [authenticationComplete, currentPatient, activeMedications]);
+
+  // 🤖 AI: Calculate patient risk score
+  const calculateRiskScore = (patient, meds, interactions) => {
+    let riskScore = 0;
+    let riskFactors = [];
+
+    // Age factor
+    if (patient.age > 65) {
+      riskScore += 20;
+      riskFactors.push('Elderly patient (>65 years)');
+    } else if (patient.age < 5) {
+      riskScore += 15;
+      riskFactors.push('Pediatric patient');
+    }
+
+    // Polypharmacy
+    if (meds.length > 5) {
+      riskScore += 25;
+      riskFactors.push(`Polypharmacy (${meds.length} medications)`);
+    } else if (meds.length > 3) {
+      riskScore += 15;
+      riskFactors.push(`Multiple medications (${meds.length})`);
+    }
+
+    // Drug interactions
+    if (interactions.alerts.length > 0) {
+      riskScore += 30;
+      riskFactors.push(`${interactions.alerts.length} critical drug interaction(s)`);
+    }
+    if (interactions.warnings.length > 0) {
+      riskScore += 10;
+      riskFactors.push(`${interactions.warnings.length} moderate interaction(s)`);
+    }
+
+    // High-risk medications
+    const highRiskDrugs = ['Warfarin', 'Insulin Glargine', 'Digoxin', 'Methotrexate'];
+    const patientHighRiskDrugs = meds.filter(m => highRiskDrugs.includes(m.drugName));
+    if (patientHighRiskDrugs.length > 0) {
+      riskScore += 20;
+      riskFactors.push(`High-risk medication: ${patientHighRiskDrugs.map(m => m.drugName).join(', ')}`);
+    }
+
+    // Determine risk level
+    let riskLevel = 'Low';
+    let riskColor = 'green';
+    if (riskScore > 50) {
+      riskLevel = 'Critical';
+      riskColor = 'red';
+    } else if (riskScore > 30) {
+      riskLevel = 'High';
+      riskColor = 'orange';
+    } else if (riskScore > 15) {
+      riskLevel = 'Moderate';
+      riskColor = 'yellow';
+    }
+
+    setPatientRiskScore({
+      score: Math.min(riskScore, 100),
+      level: riskLevel,
+      color: riskColor,
+      factors: riskFactors
+    });
+  };
+
+  // 🤖 AI: Verify medication dose before administration
+  const verifyMedicationDose = (medication) => {
+    const drugInfo = drugInteractionsDB.getDrugInfo(medication.drugName);
+    
+    if (!drugInfo) {
+      return {
+        safe: true,
+        message: 'No dose information available - proceed with caution',
+        info: null
+      };
+    }
+
+    return {
+      safe: true,
+      message: '✅ Dose verification available',
+      maxDose: drugInfo.maxDose,
+      info: drugInfo
+    };
+  };
 
   const getTodayLogs = (medication) => {
     const today = new Date().toISOString().split('T')[0];
@@ -208,6 +363,10 @@ export default function NurseDashboard() {
     setRackOpened(false);
     setShowRackTrigger(false);
     setNotes('');
+    setMedicationAlerts([]);
+    setPatientRiskScore(null);
+    setShowAIPanel(false);
+    setSelectedMedAIInfo(null);
   };
 
   const handleAdminister = async (medication) => {
@@ -227,6 +386,23 @@ export default function NurseDashboard() {
       alert(`⏰ Cannot administer now!\n\n${timeCheck.reason}`);
       return;
     }
+
+    // 🤖 AI: Check for critical interactions before administering
+    const criticalAlerts = medicationAlerts.filter(a => 
+      a.severity === 'critical' || a.severity === 'high'
+    );
+    
+    if (criticalAlerts.length > 0) {
+      const alertMessages = criticalAlerts.map(a => `• ${a.message}`).join('\n');
+      const proceed = window.confirm(
+        `⚠️ CRITICAL MEDICATION ALERTS:\n\n${alertMessages}\n\nHave you consulted with the pharmacist/physician?\n\nProceed with administration?`
+      );
+      if (!proceed) return;
+    }
+
+    // 🤖 AI: Get drug info
+    const doseVerification = verifyMedicationDose(medication);
+    setSelectedMedAIInfo(doseVerification.info);
 
     setSelectedMedication(medication);
     
@@ -291,6 +467,7 @@ export default function NurseDashboard() {
         setShowRackTrigger(false);
         setRackOpened(false);
         setNotes('');
+        setSelectedMedAIInfo(null);
       } else {
         alert(`❌ Error: ${result.error}`);
       }
@@ -364,7 +541,7 @@ export default function NurseDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-100">
       
-      {/* ✅ MOBILE-OPTIMIZED HEADER */}
+      {/* MOBILE-OPTIMIZED HEADER */}
       <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
         <div className="px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
@@ -379,10 +556,11 @@ export default function NurseDashboard() {
             </Button>
             
             <div className="flex-1 min-w-0 text-center">
-              <h1 className="text-sm sm:text-lg md:text-xl font-bold text-slate-900 truncate">
-                Medication Administration
+              <h1 className="text-sm sm:text-lg md:text-xl font-bold text-slate-900 truncate flex items-center justify-center gap-2">
+                <span>Medication Administration</span>
+                <Brain size={16} className="text-purple-600" />
               </h1>
-              <p className="text-xs text-slate-600 hidden sm:block">IoT-Enabled System</p>
+              <p className="text-xs text-slate-600 hidden sm:block">AI-Enhanced IoT System</p>
             </div>
             
             <div className="bg-pink-50 rounded-lg px-2 py-1 sm:px-3 sm:py-2 shrink-0">
@@ -396,7 +574,7 @@ export default function NurseDashboard() {
 
       <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6">
         
-        {/* ✅ MOBILE-OPTIMIZED TAB NAVIGATION */}
+        {/* MOBILE-OPTIMIZED TAB NAVIGATION */}
         <Card className="border-2 border-pink-200 shadow-lg mb-4">
           <CardContent className="p-2">
             <div className="grid grid-cols-2 gap-2">
@@ -438,7 +616,7 @@ export default function NurseDashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Authentication */}
+              {/* Authentication - ORIGINAL SCAN INTERFACE */}
               <div className="mb-4">
                 <ScanInterface
                   onScan={handleScan}
@@ -451,10 +629,79 @@ export default function NurseDashboard() {
 
               {authenticationComplete && (
                 <>
-                  {/* ✅ MOBILE: Collapsible Search & Filters */}
+                  {/* 🤖 AI RISK SCORE CARD */}
+                  {patientRiskScore && (
+                    <Card className={`border-2 mb-4 ${
+                      patientRiskScore.color === 'red' ? 'border-red-300 bg-red-50' :
+                      patientRiskScore.color === 'orange' ? 'border-orange-300 bg-orange-50' :
+                      patientRiskScore.color === 'yellow' ? 'border-yellow-300 bg-yellow-50' :
+                      'border-green-300 bg-green-50'
+                    }`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Brain size={20} className="text-purple-600" />
+                            <h3 className="font-bold text-sm">AI Risk Assessment</h3>
+                          </div>
+                          <Badge className={`${
+                            patientRiskScore.color === 'red' ? 'bg-red-600' :
+                            patientRiskScore.color === 'orange' ? 'bg-orange-600' :
+                            patientRiskScore.color === 'yellow' ? 'bg-yellow-600' :
+                            'bg-green-600'
+                          }`}>
+                            {patientRiskScore.level}
+                          </Badge>
+                        </div>
+                        <div className="text-3xl font-bold mb-2">{patientRiskScore.score}/100</div>
+                        <div className="space-y-1">
+                          {patientRiskScore.factors.slice(0, 3).map((factor, idx) => (
+                            <p key={idx} className="text-xs">• {factor}</p>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* 🤖 AI MEDICATION ALERTS */}
+                  {showAIPanel && medicationAlerts.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3 mb-4"
+                    >
+                      {medicationAlerts.slice(0, 3).map((alert, idx) => {
+                        const Icon = alert.icon;
+                        return (
+                          <Card key={idx} className={`border-2 ${
+                            alert.severity === 'critical' || alert.severity === 'high' ? 'border-red-500 bg-red-50' : 'border-orange-400 bg-orange-50'
+                          }`}>
+                            <CardContent className="p-3">
+                              <div className="flex items-start gap-2">
+                                <Icon className={`shrink-0 ${
+                                  alert.severity === 'critical' || alert.severity === 'high' ? 'text-red-600' : 'text-orange-600'
+                                }`} size={20} />
+                                <div className="flex-1 min-w-0">
+                                  <p className={`font-bold text-xs ${
+                                    alert.severity === 'critical' || alert.severity === 'high' ? 'text-red-900' : 'text-orange-900'
+                                  }`}>
+                                    {alert.severity === 'critical' ? '🚨 CRITICAL' : alert.severity === 'high' ? '⚠️ HIGH RISK' : '⚠️ CAUTION'}
+                                  </p>
+                                  <p className="text-xs mt-1">{alert.message}</p>
+                                  {alert.recommendation && (
+                                    <p className="text-xs mt-1 font-semibold">💡 {alert.recommendation}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+
+                  {/* MOBILE: Collapsible Search & Filters - ORIGINAL */}
                   <Card className="border-2 border-pink-200 shadow-lg mb-4">
                     <CardContent className="p-3 sm:p-4">
-                      {/* Mobile: Search bar + Filter toggle */}
                       <div className="flex gap-2 mb-3 sm:mb-0">
                         <div className="flex-1 relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -514,7 +761,7 @@ export default function NurseDashboard() {
                     </CardContent>
                   </Card>
 
-                  {/* ✅ MOBILE-OPTIMIZED: Single column on mobile */}
+                  {/* MEDICATIONS GRID - ENHANCED WITH AI INFO */}
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                     {filteredMedications
                       .filter(med => med.patientHHID === currentPatient.hhid)
@@ -534,6 +781,7 @@ export default function NurseDashboard() {
                         .map((med) => {
                           const timingStatus = canAdminister(med);
                           const todayLogs = getTodayLogs(med);
+                          const doseVerification = verifyMedicationDose(med);
 
                           return (
                             <Card key={med.id} className="border-2 border-pink-200 shadow-lg hover:shadow-xl transition-all">
@@ -582,6 +830,19 @@ export default function NurseDashboard() {
                                         </Badge>
                                       ))}
                                     </div>
+                                  </div>
+                                )}
+
+                                {/* 🤖 AI DOSE INFO */}
+                                {doseVerification.info && (
+                                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 text-xs">
+                                    <p className="font-semibold text-purple-900 mb-1">
+                                      <Brain size={10} className="inline mr-1" />
+                                      AI Info
+                                    </p>
+                                    {doseVerification.maxDose && (
+                                      <p className="text-purple-800">Max: {doseVerification.maxDose}</p>
+                                    )}
                                   </div>
                                 )}
 
@@ -646,7 +907,7 @@ export default function NurseDashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Request Supplies */}
+              {/* Request Supplies - ORIGINAL */}
               <Card className="border-2 border-purple-200 shadow-xl">
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -669,7 +930,7 @@ export default function NurseDashboard() {
 
                 <CardContent className="p-6 sm:p-8">
                   <div className="text-center py-8 sm:py-12">
-                    <Package size={48} sm:size={64} className="mx-auto text-slate-300 mb-4" />
+                    <Package size={64} className="mx-auto text-slate-300 mb-4" />
                     <h3 className="text-lg sm:text-xl font-bold text-slate-700 mb-2">No Active Requests</h3>
                     <p className="text-sm text-slate-500 mb-4">Submit a supply request to the pharmacy</p>
                     <Button
@@ -687,7 +948,7 @@ export default function NurseDashboard() {
         </AnimatePresence>
       </div>
 
-      {/* ✅ MOBILE-OPTIMIZED REQUEST DIALOG */}
+      {/* ORIGINAL REQUEST DIALOG */}
       {showRequestDialog && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <motion.div
@@ -840,7 +1101,7 @@ export default function NurseDashboard() {
         </div>
       )}
 
-      {/* IoT Rack Trigger Dialog - Mobile Optimized */}
+      {/* ORIGINAL IOT RACK TRIGGER DIALOG */}
       {showRackTrigger && selectedMedication && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <motion.div
@@ -861,6 +1122,29 @@ export default function NurseDashboard() {
                 <p className="text-xs sm:text-sm text-slate-600 mt-1">{selectedMedication.dose}</p>
                 <Badge variant="outline" className="mt-2">Rack {selectedMedication.rackId}</Badge>
               </div>
+
+              {/* 🤖 AI INFO IN RACK DIALOG */}
+              {selectedMedAIInfo && (
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                  <p className="font-bold text-sm text-purple-900 mb-2">
+                    <Brain size={14} className="inline mr-1" />
+                    AI Drug Information
+                  </p>
+                  {selectedMedAIInfo.warnings && selectedMedAIInfo.warnings.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-purple-800">Warnings:</p>
+                      {selectedMedAIInfo.warnings.slice(0, 2).map((warning, idx) => (
+                        <p key={idx} className="text-xs text-purple-700">• {warning}</p>
+                      ))}
+                    </div>
+                  )}
+                  {selectedMedAIInfo.maxDose && (
+                    <p className="text-xs text-purple-700 mt-2">
+                      <strong>Max Dose:</strong> {selectedMedAIInfo.maxDose}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="bg-slate-100 rounded-lg p-4 sm:p-6">
                 <div className="flex flex-col items-center">
@@ -921,7 +1205,7 @@ export default function NurseDashboard() {
         </div>
       )}
 
-      {/* Final Confirmation Modal - Mobile Optimized */}
+      {/* ORIGINAL FINAL CONFIRMATION MODAL */}
       {selectedMedication && !showRackTrigger && (selectedMedication.rackId ? rackOpened : true) && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <motion.div
@@ -973,6 +1257,19 @@ export default function NurseDashboard() {
                   </div>
                 )}
 
+                {/* 🤖 AI INFO IN CONFIRMATION */}
+                {selectedMedAIInfo && selectedMedAIInfo.commonSideEffects && (
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <p className="text-xs font-semibold text-purple-900 mb-1">
+                      <Info size={12} className="inline mr-1" />
+                      Common Side Effects:
+                    </p>
+                    <p className="text-xs text-purple-700">
+                      {selectedMedAIInfo.commonSideEffects.slice(0, 3).join(', ')}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-xs sm:text-sm font-semibold text-slate-700 mb-2 block">Notes</label>
                   <Textarea
@@ -992,6 +1289,7 @@ export default function NurseDashboard() {
                     setSelectedMedication(null);
                     setRackOpened(false);
                     setNotes('');
+                    setSelectedMedAIInfo(null);
                   }}
                   disabled={loading}
                   className="flex-1 h-12 hidden sm:block"

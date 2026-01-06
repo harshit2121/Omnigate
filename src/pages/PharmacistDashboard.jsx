@@ -11,11 +11,14 @@ import {
   Sparkles, Award, ShieldCheck, TrendingUp, Activity,
   Package, AlertTriangle, Calendar, Users, ClipboardList,
   BarChart3, FileText, Zap, Star, Target, Box, Unlock,
-  Lock, Loader2, ShoppingCart, XCircle, Menu, X
+  Lock, Loader2, ShoppingCart, XCircle, Menu, X, Brain,
+  Shield, AlertCircle, Check, Info, BookOpen, Beaker
 } from 'lucide-react';
 import { usePatients, useMedications } from '../hooks/useFirebaseData';
 import { addMedication } from '../services/firebaseMedications';
 import { medicationDictionary, frequencyOptions, routeOptions } from '../data/medicationDictionary';
+import { drugInteractionsDB } from '../data/drugInteractions';
+import Fuse from 'fuse.js';
 
 export default function PharmacistDashboard() {
   const navigate = useNavigate();
@@ -23,23 +26,27 @@ export default function PharmacistDashboard() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('prescriptions');
-  const [showPatientList, setShowPatientList] = useState(false); // ✅ Mobile patient list toggle
+  const [showPatientList, setShowPatientList] = useState(false);
   
-  // Medication form
+  // Medication form states
   const [drugName, setDrugName] = useState('');
   const [brandName, setBrandName] = useState('');
   const [drugSuggestions, setDrugSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  
   const [dose, setDose] = useState('');
   const [doseSuggestions, setDoseSuggestions] = useState([]);
-  
   const [route, setRoute] = useState('');
   const [frequency, setFrequency] = useState('');
   const [timing, setTiming] = useState([]);
   const [instructions, setInstructions] = useState('');
   const [duration, setDuration] = useState('');
+
+  // 🤖 AI Features States
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [currentPatientMeds, setCurrentPatientMeds] = useState([]);
+  const [interactionAlerts, setInteractionAlerts] = useState({ alerts: [], warnings: [], synergies: [] });
 
   const { patients } = usePatients();
   const { medications } = useMedications();
@@ -57,18 +64,6 @@ export default function PharmacistDashboard() {
       ],
       requestDate: new Date().toISOString(),
       status: 'pending',
-    },
-    {
-      id: 'PO002',
-      requestedBy: 'Sister Anita Kumar',
-      nurseId: 'N001',
-      ward: 'ICU',
-      items: [
-        { drugName: 'Pantoprazole 40mg', brandName: 'Pantocid', quantity: 30 },
-        { drugName: 'Insulin Injection', brandName: 'Lantus', quantity: 20 }
-      ],
-      requestDate: new Date(Date.now() - 86400000).toISOString(),
-      status: 'pending',
     }
   ]);
 
@@ -84,6 +79,13 @@ export default function PharmacistDashboard() {
     { id: 'R-B1', name: 'Rack B1 - Antibiotics', location: 'Ward B', ip: '192.168.1.65' },
     { id: 'R-C1', name: 'Rack C1 - ICU', location: 'ICU', ip: '192.168.1.67' },
   ];
+
+  // Setup Fuse.js for smart drug search
+  const fuse = new Fuse(medicationDictionary, {
+    keys: ['name', 'brandNames', 'category'],
+    threshold: 0.3,
+    includeScore: true
+  });
 
   const filteredPatients = patients.filter(p =>
     p.hhid.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,17 +103,37 @@ export default function PharmacistDashboard() {
 
   const categories = ['all', ...new Set(medicationDictionary.map(m => m.category))];
 
+  // 🤖 AI: Get patient's current medications
+  useEffect(() => {
+    if (selectedPatient) {
+      const patientMeds = medications
+        .filter(m => m.patientHHID === selectedPatient.hhid && m.status === 'active')
+        .map(m => m.drugName);
+      setCurrentPatientMeds(patientMeds);
+    }
+  }, [selectedPatient, medications]);
+
+  // 🤖 AI: Real-time drug interaction check
+  useEffect(() => {
+    if (drugName && currentPatientMeds.length > 0) {
+      const allDrugs = [...currentPatientMeds, drugName];
+      const analysis = drugInteractionsDB.checkInteractions(allDrugs);
+      setInteractionAlerts(analysis);
+      setShowAIPanel(analysis.alerts.length > 0 || analysis.warnings.length > 0 || analysis.synergies.length > 0);
+    } else {
+      setInteractionAlerts({ alerts: [], warnings: [], synergies: [] });
+      setShowAIPanel(false);
+    }
+  }, [drugName, currentPatientMeds]);
+
+  // 🤖 AI: Enhanced drug search with fuzzy matching
   useEffect(() => {
     if (drugName.length > 1) {
-      const filtered = medicationDictionary.filter(med => {
-        const searchLower = drugName.toLowerCase();
-        const matchesGeneric = med.name.toLowerCase().includes(searchLower);
-        const matchesBrand = med.brandNames?.some(brand => 
-          brand.toLowerCase().includes(searchLower)
-        );
-        const matchesCategory = selectedCategory === 'all' || med.category === selectedCategory;
-        return (matchesGeneric || matchesBrand) && matchesCategory;
-      });
+      const results = fuse.search(drugName);
+      const filtered = results
+        .map(r => r.item)
+        .filter(med => selectedCategory === 'all' || med.category === selectedCategory)
+        .slice(0, 10);
       setDrugSuggestions(filtered);
       setShowSuggestions(true);
     } else {
@@ -120,6 +142,7 @@ export default function PharmacistDashboard() {
     }
   }, [drugName, selectedCategory]);
 
+  // 🤖 AI: Get comprehensive drug info
   const handleDrugSelect = (medication) => {
     setDrugName(medication.name);
     if (medication.brandNames && medication.brandNames.length > 0) {
@@ -127,6 +150,10 @@ export default function PharmacistDashboard() {
     }
     setDoseSuggestions(medication.commonDoses);
     setShowSuggestions(false);
+    
+    // Get AI analysis for this drug
+    const drugInfo = drugInteractionsDB.interactions[medication.name];
+    setAiAnalysis(drugInfo);
     
     if (medication.commonDoses.length > 0) setDose(medication.commonDoses[0]);
     if (medication.routes.length > 0) setRoute(medication.routes[0]);
@@ -147,6 +174,14 @@ export default function PharmacistDashboard() {
     if (!selectedPatient || !drugName || !brandName || !dose || !route || !frequency) {
       alert('❌ Please fill all required fields including Brand Name!');
       return;
+    }
+
+    // Check for critical interactions
+    if (interactionAlerts.alerts.length > 0) {
+      const proceed = window.confirm(
+        `⚠️ CRITICAL DRUG INTERACTIONS DETECTED:\n\n${interactionAlerts.alerts.map(a => a.message).join('\n\n')}\n\nDo you still want to proceed?`
+      );
+      if (!proceed) return;
     }
 
     setLoading(true);
@@ -171,6 +206,7 @@ export default function PharmacistDashboard() {
 
       if (result.success) {
         alert('✅ Medication prescribed successfully!');
+        // Reset form
         setDrugName('');
         setBrandName('');
         setDose('');
@@ -180,7 +216,8 @@ export default function PharmacistDashboard() {
         setInstructions('');
         setDuration('');
         setDoseSuggestions([]);
-        setSelectedPatient(null);
+        setAiAnalysis(null);
+        setShowAIPanel(false);
       } else {
         alert(`❌ Error: ${result.error}`);
       }
@@ -246,7 +283,7 @@ export default function PharmacistDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
       
-      {/* ✅ MOBILE-OPTIMIZED HEADER */}
+      {/* Header */}
       <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
         <div className="px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
@@ -262,27 +299,28 @@ export default function PharmacistDashboard() {
             
             <div className="flex-1 min-w-0">
               <h1 className="text-base sm:text-xl md:text-2xl font-bold text-slate-900 truncate flex items-center gap-2">
-                <span className="hidden sm:inline">Clinical Pharmacy</span>
-                <span className="sm:hidden">Pharmacy</span>
+                <Brain size={20} className="text-purple-600 shrink-0" />
+                <span className="hidden sm:inline">AI-Powered Pharmacy</span>
+                <span className="sm:hidden">AI Pharmacy</span>
                 <Sparkles size={16} className="text-yellow-500 shrink-0" />
               </h1>
             </div>
             
             <div className="hidden sm:flex items-center gap-2">
+              <Badge className="bg-purple-600 text-xs px-2 py-1">
+                <Brain size={12} className="mr-1" />
+                AI
+              </Badge>
               <Badge className="bg-emerald-600 text-xs px-2 py-1">
                 <ShieldCheck size={12} className="mr-1" />
-                ISO
-              </Badge>
-              <Badge className="bg-blue-600 text-xs px-2 py-1">
-                <Award size={12} className="mr-1" />
-                NABH
+                Safety
               </Badge>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ✅ MOBILE-OPTIMIZED TAB NAVIGATION */}
+      {/* Tab Navigation */}
       <div className="bg-white border-b border-slate-200 sticky top-[56px] sm:top-[72px] z-20">
         <div className="px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto">
@@ -295,7 +333,7 @@ export default function PharmacistDashboard() {
               }`}
             >
               <div className="flex items-center gap-2">
-                <Pill size={16} sm:size={18} />
+                <Pill size={16} />
                 <span>Prescriptions</span>
               </div>
             </button>
@@ -308,7 +346,7 @@ export default function PharmacistDashboard() {
               }`}
             >
               <div className="flex items-center gap-2">
-                <Package size={16} sm:size={18} />
+                <Package size={16} />
                 <span>Procurement</span>
                 {stats.pendingOrders > 0 && (
                   <Badge variant="destructive" className="text-xs">
@@ -324,7 +362,7 @@ export default function PharmacistDashboard() {
       {/* Main Content */}
       <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 max-w-7xl mx-auto">
         
-        {/* ✅ MOBILE-OPTIMIZED STATISTICS - 2 COLUMNS ON MOBILE */}
+        {/* Statistics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Card className="border-2 border-emerald-200 shadow-sm">
             <CardContent className="p-3 sm:p-6">
@@ -376,7 +414,7 @@ export default function PharmacistDashboard() {
               exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              {/* ✅ MOBILE: Show selected patient first, then toggle button for list */}
+              {/* Mobile: Selected Patient Card */}
               {selectedPatient && (
                 <Card className="border-2 border-emerald-300 shadow-lg lg:hidden">
                   <CardContent className="p-4">
@@ -391,6 +429,11 @@ export default function PharmacistDashboard() {
                             <Badge className="bg-emerald-600 text-xs">{selectedPatient.hhid}</Badge>
                             <Badge variant="outline" className="text-xs">{selectedPatient.age}Y</Badge>
                           </div>
+                          {currentPatientMeds.length > 0 && (
+                            <p className="text-xs text-slate-600 mt-1">
+                              Current Meds: {currentPatientMeds.join(', ')}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <Button
@@ -405,7 +448,7 @@ export default function PharmacistDashboard() {
                 </Card>
               )}
 
-              {/* ✅ MOBILE: Collapsible Patient List */}
+              {/* Mobile: Patient List */}
               {(!selectedPatient || showPatientList) && (
                 <Card className="border-2 border-emerald-200 shadow-lg lg:hidden">
                   <div className="bg-emerald-600 text-white p-4">
@@ -440,7 +483,7 @@ export default function PharmacistDashboard() {
                 </Card>
               )}
 
-              {/* ✅ DESKTOP: Side-by-side layout */}
+              {/* Desktop Layout */}
               <div className="hidden lg:grid lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-4">
                   <Card className="border-2 border-emerald-200 shadow-xl">
@@ -458,6 +501,16 @@ export default function PharmacistDashboard() {
                         <div className="mb-4 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl">
                           <p className="font-bold text-lg">{selectedPatient.name}</p>
                           <Badge className="mt-2">{selectedPatient.hhid}</Badge>
+                          {currentPatientMeds.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-semibold text-slate-700 mb-1">Current Medications:</p>
+                              {currentPatientMeds.map((med, idx) => (
+                                <Badge key={idx} variant="outline" className="mr-1 mb-1 text-xs">
+                                  {med}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -517,12 +570,16 @@ export default function PharmacistDashboard() {
                       setInstructions={setInstructions}
                       loading={loading}
                       handleSubmit={handleSubmit}
+                      aiAnalysis={aiAnalysis}
+                      interactionAlerts={interactionAlerts}
+                      showAIPanel={showAIPanel}
+                      currentPatientMeds={currentPatientMeds}
                     />
                   )}
                 </div>
               </div>
 
-              {/* ✅ MOBILE: Prescription Form */}
+              {/* Mobile: Prescription Form */}
               {selectedPatient && !showPatientList && (
                 <div className="lg:hidden">
                   <PrescriptionForm
@@ -553,6 +610,10 @@ export default function PharmacistDashboard() {
                     setInstructions={setInstructions}
                     loading={loading}
                     handleSubmit={handleSubmit}
+                    aiAnalysis={aiAnalysis}
+                    interactionAlerts={interactionAlerts}
+                    showAIPanel={showAIPanel}
+                    currentPatientMeds={currentPatientMeds}
                   />
                 </div>
               )}
@@ -627,7 +688,7 @@ export default function PharmacistDashboard() {
         </AnimatePresence>
       </div>
 
-      {/* ✅ MOBILE-OPTIMIZED MODAL */}
+      {/* Procurement Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <motion.div
@@ -739,193 +800,366 @@ export default function PharmacistDashboard() {
   );
 }
 
-// ✅ Prescription Form Component (extracted for reusability)
+// 🤖 AI-Enhanced Prescription Form Component
 function PrescriptionForm({ 
   selectedPatient, drugName, setDrugName, brandName, setBrandName,
   selectedCategory, setSelectedCategory, categories, showSuggestions,
   drugSuggestions, handleDrugSelect, dose, setDose, doseSuggestions,
   route, setRoute, routeOptions, frequency, handleFrequencyChange,
   frequencyOptions, timing, duration, setDuration, instructions,
-  setInstructions, loading, handleSubmit
+  setInstructions, loading, handleSubmit, aiAnalysis, interactionAlerts,
+  showAIPanel, currentPatientMeds
 }) {
   return (
-    <Card className="border-2 border-emerald-200 shadow-lg">
-      <div className="bg-emerald-600 text-white p-4 sm:p-5 rounded-t-xl">
-        <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-          <FileText size={20} />
-          New Prescription
-        </h2>
-        <p className="text-xs sm:text-sm text-emerald-100 mt-1">
-          For: <span className="font-bold">{selectedPatient.name}</span> • {selectedPatient.hhid}
-        </p>
-      </div>
-      <CardContent className="p-4 sm:p-6">
-        <div className="space-y-4">
-          
-          <div>
-            <label className="text-sm font-bold mb-2 block">Category Filter</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full h-11 sm:h-12 border-2 rounded-xl px-3 sm:px-4 text-sm sm:text-base"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat === 'all' ? '🔍 All' : `💊 ${cat}`}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="relative">
-            <label className="text-sm font-bold mb-2 block">Drug Name (Generic) *</label>
-            <Input
-              value={drugName}
-              onChange={(e) => setDrugName(e.target.value)}
-              placeholder="Type medication..."
-              className="h-11 sm:h-12 text-sm sm:text-base"
-            />
-            {showSuggestions && drugSuggestions.length > 0 && (
-              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-emerald-400 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                {drugSuggestions.map((med, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => handleDrugSelect(med)}
-                    className="p-3 hover:bg-emerald-50 border-b last:border-0 active:bg-emerald-100"
-                  >
-                    <p className="font-bold text-sm">{med.name}</p>
-                    {med.brandNames && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {med.brandNames.slice(0, 3).map((brand, bIdx) => (
-                          <Badge key={bIdx} variant="outline" className="text-xs">{brand}</Badge>
-                        ))}
-                      </div>
-                    )}
+    <div className="space-y-4">
+      {/* 🤖 AI DRUG INTERACTION ALERTS */}
+      {showAIPanel && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-3"
+        >
+          {/* Critical Alerts */}
+          {interactionAlerts.alerts.map((alert, idx) => (
+            <Card key={idx} className="border-2 border-red-500 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="text-red-600 shrink-0" size={24} />
+                  <div className="flex-1">
+                    <p className="font-bold text-red-900 text-sm sm:text-base">
+                      🚨 CRITICAL INTERACTION
+                    </p>
+                    <p className="text-sm text-red-800 mt-1">{alert.message}</p>
                   </div>
-                ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Warnings */}
+          {interactionAlerts.warnings.map((warning, idx) => (
+            <Card key={idx} className="border-2 border-orange-400 bg-orange-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="text-orange-600 shrink-0" size={24} />
+                  <div className="flex-1">
+                    <p className="font-bold text-orange-900 text-sm">
+                      ⚠️ CAUTION REQUIRED
+                    </p>
+                    <p className="text-sm text-orange-800 mt-1">{warning.message}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Synergies */}
+          {interactionAlerts.synergies.map((synergy, idx) => (
+            <Card key={idx} className="border-2 border-green-400 bg-green-50">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="text-green-600 shrink-0" size={24} />
+                  <div className="flex-1">
+                    <p className="font-bold text-green-900 text-sm">
+                      ✅ SYNERGISTIC EFFECT
+                    </p>
+                    <p className="text-sm text-green-800 mt-1">{synergy.message}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </motion.div>
+      )}
+
+      {/* 🤖 AI DRUG INFORMATION PANEL */}
+      {aiAnalysis && (
+        <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-blue-50">
+          <div className="bg-purple-600 text-white p-3 flex items-center gap-2">
+            <Brain size={20} />
+            <h3 className="font-bold text-sm sm:text-base">AI Drug Analysis: {drugName}</h3>
+          </div>
+          <CardContent className="p-4 space-y-3">
+            
+            {/* Contraindications */}
+            {aiAnalysis.contraindications && aiAnalysis.contraindications.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="text-red-600" size={16} />
+                  <p className="font-bold text-sm text-red-900">Contraindications</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <ul className="text-xs sm:text-sm space-y-1">
+                    {aiAnalysis.contraindications.map((item, idx) => (
+                      <li key={idx} className="text-red-800">• {item}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
-          </div>
 
-          <div>
-            <label className="text-sm font-bold mb-2 block">Brand Name *</label>
-            <Input
-              value={brandName}
-              onChange={(e) => setBrandName(e.target.value)}
-              placeholder="e.g., Pantocid"
-              className="h-11 sm:h-12 border-2 border-blue-300 bg-blue-50"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-bold mb-2 block">Dosage *</label>
-            {doseSuggestions.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {doseSuggestions.map((d, idx) => (
-                  <Badge
-                    key={idx}
-                    onClick={() => setDose(d)}
-                    className={`cursor-pointer px-3 py-2 text-xs sm:text-sm ${
-                      dose === d ? 'bg-emerald-600' : 'bg-slate-600'
-                    }`}
-                  >
-                    {d}
-                  </Badge>
-                ))}
+            {/* Warnings */}
+            {aiAnalysis.warnings && aiAnalysis.warnings.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="text-orange-600" size={16} />
+                  <p className="font-bold text-sm text-orange-900">Warnings</p>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <ul className="text-xs sm:text-sm space-y-1">
+                    {aiAnalysis.warnings.map((item, idx) => (
+                      <li key={idx} className="text-orange-800">• {item}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
-            <Input
-              value={dose}
-              onChange={(e) => setDose(e.target.value)}
-              placeholder="e.g., 500mg"
-              className="h-11 sm:h-12"
-            />
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-bold mb-2 block">Route *</label>
-              <select
-                value={route}
-                onChange={(e) => setRoute(e.target.value)}
-                className="w-full h-11 sm:h-12 border-2 rounded-xl px-3 sm:px-4 text-sm sm:text-base"
-              >
-                <option value="">Select</option>
-                {routeOptions.map(r => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+            {/* Pregnancy & Lactation */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {aiAnalysis.pregnancy && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="font-bold text-xs text-blue-900 mb-1">🤰 Pregnancy</p>
+                  <p className="text-xs text-blue-800">{aiAnalysis.pregnancy}</p>
+                </div>
+              )}
+              {aiAnalysis.lactation && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="font-bold text-xs text-blue-900 mb-1">🤱 Lactation</p>
+                  <p className="text-xs text-blue-800">{aiAnalysis.lactation}</p>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="text-sm font-bold mb-2 block">Frequency *</label>
-              <select
-                value={frequency}
-                onChange={(e) => handleFrequencyChange(e.target.value)}
-                className="w-full h-11 sm:h-12 border-2 rounded-xl px-3 sm:px-4 text-sm sm:text-base"
-              >
-                <option value="">Select</option>
-                {frequencyOptions.map(f => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {timing.length > 0 && (
-            <div className="p-3 sm:p-4 bg-blue-50 border-2 border-blue-300 rounded-xl">
-              <p className="text-sm font-bold text-blue-900 mb-2">
-                <Clock size={14} className="inline mr-1" />
-                Schedule ({timing.length}x/day)
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {timing.map((time, idx) => (
-                  <Badge key={idx} className="bg-blue-600 px-3 py-1 text-xs sm:text-sm">
-                    {time}
-                  </Badge>
-                ))}
+            {/* Max Dose */}
+            {aiAnalysis.maxDose && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <p className="font-bold text-xs text-purple-900 mb-1">💊 Maximum Dose</p>
+                <p className="text-sm font-bold text-purple-800">{aiAnalysis.maxDose}</p>
               </div>
-            </div>
+            )}
+
+            {/* Side Effects */}
+            {aiAnalysis.commonSideEffects && aiAnalysis.commonSideEffects.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Info className="text-blue-600" size={16} />
+                  <p className="font-bold text-sm text-blue-900">Common Side Effects</p>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {aiAnalysis.commonSideEffects.map((effect, idx) => (
+                    <Badge key={idx} variant="outline" className="text-xs">
+                      {effect}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PRESCRIPTION FORM */}
+      <Card className="border-2 border-emerald-200 shadow-lg">
+        <div className="bg-emerald-600 text-white p-4 sm:p-5 rounded-t-xl">
+          <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+            <FileText size={20} />
+            New Prescription
+          </h2>
+          <p className="text-xs sm:text-sm text-emerald-100 mt-1">
+            For: <span className="font-bold">{selectedPatient.name}</span> • {selectedPatient.hhid}
+          </p>
+          {currentPatientMeds.length > 0 && (
+            <p className="text-xs text-emerald-100 mt-2">
+              Current: {currentPatientMeds.join(', ')}
+            </p>
           )}
-
-          <div>
-            <label className="text-sm font-bold mb-2 block">Duration</label>
-            <Input
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="e.g., 7 days"
-              className="h-11 sm:h-12"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-bold mb-2 block">Special Instructions</label>
-            <Textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="e.g., Take with food..."
-              rows={3}
-              className="text-sm sm:text-base resize-none"
-            />
-          </div>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full bg-emerald-600 h-12 sm:h-14 text-base sm:text-lg font-bold"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 animate-spin" size={20} />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={20} className="mr-2" />
-                Submit Prescription
-              </>
-            )}
-          </Button>
         </div>
-      </CardContent>
-    </Card>
+        <CardContent className="p-4 sm:p-6">
+          <div className="space-y-4">
+            
+            <div>
+              <label className="text-sm font-bold mb-2 block">Category Filter</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full h-11 sm:h-12 border-2 rounded-xl px-3 sm:px-4 text-sm sm:text-base"
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat === 'all' ? '🔍 All' : `💊 ${cat}`}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-bold mb-2 block flex items-center gap-2">
+                Drug Name (Generic) *
+                <Brain size={14} className="text-purple-600" />
+              </label>
+              <Input
+                value={drugName}
+                onChange={(e) => setDrugName(e.target.value)}
+                placeholder="Type medication..."
+                className="h-11 sm:h-12 text-sm sm:text-base"
+              />
+              {showSuggestions && drugSuggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-2 bg-white border-2 border-emerald-400 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                  {drugSuggestions.map((med, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => handleDrugSelect(med)}
+                      className="p-3 hover:bg-emerald-50 border-b last:border-0 active:bg-emerald-100 cursor-pointer"
+                    >
+                      <p className="font-bold text-sm">{med.name}</p>
+                      {med.brandNames && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {med.brandNames.slice(0, 3).map((brand, bIdx) => (
+                            <Badge key={bIdx} variant="outline" className="text-xs">{brand}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-slate-600 mt-1">Category: {med.category}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-bold mb-2 block">Brand Name *</label>
+              <Input
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+                placeholder="e.g., Pantocid"
+                className="h-11 sm:h-12 border-2 border-blue-300 bg-blue-50"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold mb-2 block">Dosage *</label>
+              {doseSuggestions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {doseSuggestions.map((d, idx) => (
+                    <Badge
+                      key={idx}
+                      onClick={() => setDose(d)}
+                      className={`cursor-pointer px-3 py-2 text-xs sm:text-sm ${
+                        dose === d ? 'bg-emerald-600' : 'bg-slate-600'
+                      }`}
+                    >
+                      {d}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <Input
+                value={dose}
+                onChange={(e) => setDose(e.target.value)}
+                placeholder="e.g., 500mg"
+                className="h-11 sm:h-12"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-bold mb-2 block">Route *</label>
+                <select
+                  value={route}
+                  onChange={(e) => setRoute(e.target.value)}
+                  className="w-full h-11 sm:h-12 border-2 rounded-xl px-3 sm:px-4 text-sm sm:text-base"
+                >
+                  <option value="">Select</option>
+                  {routeOptions.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold mb-2 block">Frequency *</label>
+                <select
+                  value={frequency}
+                  onChange={(e) => handleFrequencyChange(e.target.value)}
+                  className="w-full h-11 sm:h-12 border-2 rounded-xl px-3 sm:px-4 text-sm sm:text-base"
+                >
+                  <option value="">Select</option>
+                  {frequencyOptions.map(f => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {timing.length > 0 && (
+              <div className="p-3 sm:p-4 bg-blue-50 border-2 border-blue-300 rounded-xl">
+                <p className="text-sm font-bold text-blue-900 mb-2">
+                  <Clock size={14} className="inline mr-1" />
+                  Schedule ({timing.length}x/day)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {timing.map((time, idx) => (
+                    <Badge key={idx} className="bg-blue-600 px-3 py-1 text-xs sm:text-sm">
+                      {time}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-bold mb-2 block">Duration</label>
+              <Input
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                placeholder="e.g., 7 days"
+                className="h-11 sm:h-12"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold mb-2 block">Special Instructions</label>
+              <Textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="e.g., Take with food..."
+                rows={3}
+                className="text-sm sm:text-base resize-none"
+              />
+            </div>
+
+            <Button
+              onClick={handleSubmit}
+              disabled={loading}
+              className={`w-full h-12 sm:h-14 text-base sm:text-lg font-bold ${
+                interactionAlerts.alerts.length > 0 
+                  ? 'bg-red-600 hover:bg-red-700' 
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 animate-spin" size={20} />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {interactionAlerts.alerts.length > 0 ? (
+                    <>
+                      <AlertTriangle size={20} className="mr-2" />
+                      Submit Despite Warnings
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={20} className="mr-2" />
+                      Submit Prescription
+                    </>
+                  )}
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
