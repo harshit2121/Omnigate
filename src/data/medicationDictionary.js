@@ -1,5 +1,232 @@
 // Indian Hospital Medication Database with Brand Names & Generic Names
+// ✅ INCLUDES IV ANTIMICROBIALS FROM DILUTION DATABASE
+
 export const medicationDictionary = [
+  // ========================================
+  // IV ANTIMICROBIALS (From Dilution Chart)
+  // ========================================
+  
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'ACYCLOVIR', 
+    brandNames: ['ZOVIRAX', 'ACIVIR', 'UNIVIR'],
+    commonDoses: ['250MG', '500MG', '700MG'], 
+    routes: ['IV'], 
+    frequencies: ['TID', 'BD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'AMIKACIN', 
+    brandNames: ['MIKACIN', 'AMIREACH'],
+    commonDoses: ['100mg', '250mg', '500mg', '1000MG'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'GENTAMICIN', 
+    brandNames: ['GENTICYN'],
+    commonDoses: ['20mg', '40mg', '60mg', '80mg'], 
+    routes: ['IV', 'IM'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'VANCOMYCIN', 
+    brandNames: ['VANCOCIN', 'VANLID', 'KABIMYCIN'],
+    commonDoses: ['500MG', '1GM'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'QID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'MEROPENEM', 
+    brandNames: ['M NEM', 'MEROWIN', 'PENMER'],
+    commonDoses: ['500MG', '1000MG'], 
+    routes: ['IV'], 
+    frequencies: ['TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'IMIPENEM', 
+    brandNames: ['ZIENAM', 'IMILAN'],
+    commonDoses: ['250MG', '500MG'], 
+    routes: ['IV'], 
+    frequencies: ['QID', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'PIPERACILLIN', 
+    brandNames: ['BRODACTUM', 'FUTAZ', 'TAZIRA', 'ZOSYN'],
+    commonDoses: ['4.5GM'], 
+    routes: ['IV'], 
+    frequencies: ['TID', 'QID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'CEFOPERAZONE', 
+    brandNames: ['MAGNEX', 'ZOSTUM'],
+    commonDoses: ['1GM', '2GM', '3GM'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'CEFEPIME', 
+    brandNames: ['CELRIM', 'NOVAPIME', 'EPIME'],
+    commonDoses: ['500MG', '1000MG', '2000MG'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'TIGECYCLINE', 
+    brandNames: ['TYGACIL', 'TYGARAY', 'TIGEPLUG'],
+    commonDoses: ['50MG'], 
+    routes: ['IV'], 
+    frequencies: ['BD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'COLISTIMETHATE', 
+    brandNames: ['XYLISTIN', 'COLY-MONAS', 'PROMISTIN'],
+    commonDoses: ['1MIU', '2MIU', '3MIU', '4.5MIU'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'TEICOPLANIN', 
+    brandNames: ['TARGOCID', 'T-PLANIN', 'TICORAY'],
+    commonDoses: ['200MG', '400MG'], 
+    routes: ['IV', 'IM'], 
+    frequencies: ['BD', 'OD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'AMPHOTERICIN B', 
+    brandNames: ['FUNGIZONE', 'AMFOCAN', 'FUNGITERICIN'],
+    commonDoses: ['50MG'], 
+    routes: ['IV'], 
+    frequencies: ['OD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'CEFTAZIDIME', 
+    brandNames: ['FORTUM', 'FORZID', 'C-ZID'],
+    commonDoses: ['1GM', '2GM'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'ERTAPENEM', 
+    brandNames: ['INVANZ', 'ZIVATOR', 'ERTIGA'],
+    commonDoses: ['1GM'], 
+    routes: ['IV'], 
+    frequencies: ['OD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'DORIPENEM', 
+    brandNames: ['SUDOPEN', 'DORIGLEN', 'MYDOR'],
+    commonDoses: ['500MG'], 
+    routes: ['IV'], 
+    frequencies: ['TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'LINEZOLID', 
+    brandNames: ['ZYVOX', 'LINOSPAN', 'LINEBRIDGE'],
+    commonDoses: ['600MG'], 
+    routes: ['IV', 'Oral'], 
+    frequencies: ['BD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'DAPTOMYCIN', 
+    brandNames: ['CUBICIN', 'IVDAPT'],
+    commonDoses: ['350MG', '500MG'], 
+    routes: ['IV'], 
+    frequencies: ['OD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'AZTREONAM', 
+    brandNames: ['AZENAM', 'AZOM', 'CROMOBACT'],
+    commonDoses: ['500MG', '1GM'], 
+    routes: ['IV'], 
+    frequencies: ['TID', 'QID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'CEFOTAXIME', 
+    brandNames: ['TAXIM', 'ORI-TAXIM'],
+    commonDoses: ['500MG', '1GM', '2GM'], 
+    routes: ['IV', 'IM'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'CEFUROXIME', 
+    brandNames: ['SUPACEF', 'CEFOPRIM', 'ALTACEF'],
+    commonDoses: ['250MG', '750MG', '1500MG'], 
+    routes: ['IV', 'IM', 'Oral'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'CLARITHROMYCIN', 
+    brandNames: ['KLACID', 'CLARIMIN', 'CLARIGLAN'],
+    commonDoses: ['500MG'], 
+    routes: ['IV', 'Oral'], 
+    frequencies: ['BD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'CLINDAMYCIN', 
+    brandNames: ['DALACIN-C', 'DALCINEX', 'CLINDUM'],
+    commonDoses: ['300MG', '600MG', '900MG'], 
+    routes: ['IV', 'IM', 'Oral'], 
+    frequencies: ['TID', 'QID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'DOXYCYCLINE', 
+    brandNames: ['DIFIDOX', 'DOXIFIC'],
+    commonDoses: ['100MG'], 
+    routes: ['IV', 'Oral'], 
+    frequencies: ['BD', 'OD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'MINOCYCLINE', 
+    brandNames: ['MILIFAST', 'DIVAINE'],
+    commonDoses: ['100MG'], 
+    routes: ['IV', 'Oral'], 
+    frequencies: ['BD'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'FOSCARNET', 
+    brandNames: ['FOSCAVIR'],
+    commonDoses: ['6GM'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'TID'] 
+  },
+  { 
+    category: 'IV Antimicrobials', 
+    name: 'SULBACTAM + CEFOPERAZONE', 
+    brandNames: ['MAGNEX', 'ZOSTUM'],
+    commonDoses: ['1.5GM', '3GM'], 
+    routes: ['IV'], 
+    frequencies: ['BD', 'TID'] 
+  },
+
+  // ========================================
+  // ORIGINAL MEDICATIONS (Your Existing List)
+  // ========================================
+  
   // Analgesics & Antipyretics
   { 
     category: 'Analgesics', 
@@ -42,7 +269,7 @@ export const medicationDictionary = [
     frequencies: ['BD', 'TID'] 
   },
   
-  // Antibiotics
+  // Antibiotics (Oral/Common)
   { 
     category: 'Antibiotics', 
     name: 'Amoxicillin', 
@@ -55,7 +282,7 @@ export const medicationDictionary = [
     category: 'Antibiotics', 
     name: 'Amoxicillin + Clavulanic Acid', 
     brandNames: ['Augmentin', 'Clavam', 'Mox-CV', 'Advent'],
-    commonDoses: ['625mg', '1g'], 
+    commonDoses: ['625mg', '1g', '1.2GM'], 
     routes: ['Oral', 'IV'], 
     frequencies: ['BD', 'TID'] 
   },
@@ -78,8 +305,8 @@ export const medicationDictionary = [
   { 
     category: 'Antibiotics', 
     name: 'Ceftriaxone', 
-    brandNames: ['Monocef', 'Taxim', 'Ufoxime', 'Ceftas'],
-    commonDoses: ['500mg', '1g', '2g'], 
+    brandNames: ['Monocef', 'Suprava', 'Cefoglare', 'Taxim', 'Ufoxime', 'Ceftas'],
+    commonDoses: ['250MG', '500mg', '1g', '2g'], 
     routes: ['IM', 'IV'], 
     frequencies: ['OD', 'BD'] 
   },
@@ -453,7 +680,8 @@ export const medicationDictionary = [
   },
 ];
 
-// Keep frequency options and route options the same...
+
+// Frequency Options
 export const frequencyOptions = [
   { value: 'OD', label: 'OD (Once Daily)', timings: ['09:00'] },
   { value: 'BD', label: 'BD (Twice Daily)', timings: ['09:00', '21:00'] },
@@ -470,6 +698,8 @@ export const frequencyOptions = [
   { value: 'Weekly', label: 'Once Weekly', timings: [] },
 ];
 
+
+// Route Options
 export const routeOptions = [
   'Oral',
   'IV (Intravenous)',

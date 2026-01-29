@@ -111,6 +111,24 @@ export default function CommonDashboard() {
         { icon: Shield, label: 'Audit Log', path: '/audit-log', color: 'amber' },
         { icon: Settings, label: 'Settings', path: '/settings', color: 'slate' },
       ]
+    },
+    {
+      label: 'Clinical',
+      items: [
+        {
+          icon: Stethoscope,
+          label: 'E-Prescription',
+          path: '/doctor-prescription',
+          color: 'indigo',
+          badge: 'Doctor'
+        },
+        {
+          icon: Users,
+          label: 'Patient Records',
+          path: '/patient-records',
+          color: 'green'
+        }
+      ]
     }
   ];
 

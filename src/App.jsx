@@ -8,6 +8,7 @@ import AuditLog from './pages/AuditLog'; // ✅ NEW
 import AppLayout from './components/layout/AppLayout';
 import CommonDashboard from './pages/CommonDashboard'; // Removed
 import Login from './pages/Login'; // Removed
+import DoctorPrescription from './pages/DoctorPrescription';
 function App() {
   return (
     <BrowserRouter>
@@ -24,6 +25,7 @@ function App() {
           <Route path="/audit-log" element={<AuditLog />} /> {/* ✅ NEW */}
           <Route path="/dashboard" element={<CommonDashboard />} /> {/* ✅ NEW */}
           <Route path="/login" element={<Login />} /> {/* ✅ NEW */}
+          <Route path="/doctor-prescription" element={<DoctorPrescription />} />
         </Route>
       </Routes>
     </BrowserRouter>

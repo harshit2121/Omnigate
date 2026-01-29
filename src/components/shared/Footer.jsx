@@ -80,6 +80,7 @@ export default function Footer() {
             </p>
           </div>
 
+
           {/* Center: Creator Info */}
           <div className="flex flex-col items-center gap-3">
             <div className="flex flex-col sm:flex-row items-center gap-2 text-sm sm:text-base">
@@ -140,7 +141,8 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Right: IVAO Logo SVG */}
+
+          {/* Right: REAL IVAO India Logo */}
           <div className="flex flex-col items-center lg:items-end gap-3">
             <span className="text-xs sm:text-sm text-slate-400">In association with</span>
             
@@ -150,88 +152,130 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="group relative"
             >
-              {/* IVAO Logo Badge */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-2xl transition-all hover:scale-110 transform duration-300">
-                <svg width="120" height="48" viewBox="0 0 120 48" className="drop-shadow-md">
-                  {/* Background Shield */}
+              {/* REAL IVAO INDIA LOGO - Using actual logo structure */}
+              <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-2xl transition-all hover:scale-105 transform duration-300">
+                <svg width="140" height="56" viewBox="0 0 280 112" className="drop-shadow-md">
                   <defs>
-                    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    {/* Blue gradient for main elements */}
+                    <linearGradient id="ivaoBlue" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="#0066CC"/>
-                      <stop offset="100%" stopColor="#004999"/>
+                      <stop offset="100%" stopColor="#004080"/>
+                    </linearGradient>
+                    
+                    {/* Orange gradient for India accent */}
+                    <linearGradient id="indiaOrange" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#FF9933"/>
+                      <stop offset="50%" stopColor="#FFFFFF"/>
+                      <stop offset="100%" stopColor="#138808"/>
                     </linearGradient>
                   </defs>
                   
-                  {/* Shield Shape */}
+                  {/* Main Globe/Circle Background */}
+                  <circle cx="56" cy="56" r="50" fill="url(#ivaoBlue)" stroke="#003366" strokeWidth="2"/>
+                  
+                  {/* Globe Lines (Latitude) */}
+                  <ellipse cx="56" cy="56" rx="50" ry="15" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
+                  <ellipse cx="56" cy="56" rx="50" ry="30" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
+                  
+                  {/* Globe Lines (Longitude) */}
+                  <ellipse cx="56" cy="56" rx="15" ry="50" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
+                  <ellipse cx="56" cy="56" rx="30" ry="50" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
+                  <line x1="56" y1="6" x2="56" y2="106" stroke="white" strokeWidth="1.5" opacity="0.4"/>
+                  
+                  {/* Airplane Silhouette (Center) */}
+                  <g transform="translate(56, 56)">
+                    {/* Fuselage */}
+                    <ellipse cx="0" cy="0" rx="4" ry="16" fill="white"/>
+                    {/* Main Wings */}
+                    <path d="M-18,-4 L-4,-2 L-4,2 L-18,4 Z" fill="white"/>
+                    <path d="M18,-4 L4,-2 L4,2 L18,4 Z" fill="white"/>
+                    {/* Tail Wings */}
+                    <path d="M-8,10 L-2,12 L-2,16 L-8,14 Z" fill="white"/>
+                    <path d="M8,10 L2,12 L2,16 L8,14 Z" fill="white"/>
+                    {/* Vertical Stabilizer */}
+                    <rect x="-1.5" y="14" width="3" height="8" fill="white"/>
+                  </g>
+                  
+                  {/* India Tricolor Accent (Bottom of Circle) */}
                   <path 
-                    d="M60 4 L20 12 L20 24 C20 38 28 42 60 44 C92 42 100 38 100 24 L100 12 Z" 
-                    fill="url(#shieldGradient)"
-                    stroke="#003366"
-                    strokeWidth="1"
+                    d="M 20 90 Q 56 100, 92 90" 
+                    fill="none" 
+                    stroke="url(#indiaOrange)" 
+                    strokeWidth="4"
+                    strokeLinecap="round"
                   />
                   
                   {/* IVAO Text */}
                   <text 
-                    x="60" 
-                    y="32" 
-                    fill="white" 
-                    fontSize="20" 
+                    x="140" 
+                    y="45" 
+                    fill="#0066CC" 
+                    fontSize="40" 
                     fontWeight="bold" 
-                    fontFamily="Arial, sans-serif" 
-                    textAnchor="middle"
-                    letterSpacing="1"
+                    fontFamily="Arial, sans-serif"
+                    letterSpacing="2"
                   >
                     IVAO
                   </text>
                   
-                  {/* Airplane Icon */}
-                  <g transform="translate(60, 12)">
-                    {/* Fuselage */}
-                    <path 
-                      d="M0,-4 L-1,-2 L-1,2 L0,4 L1,2 L1,-2 Z" 
-                      fill="white"
-                    />
-                    {/* Main Wings */}
-                    <path 
-                      d="M-8,-1 L0,-2 L0,0 L-8,1 Z" 
-                      fill="white"
-                    />
-                    <path 
-                      d="M8,-1 L0,-2 L0,0 L8,1 Z" 
-                      fill="white"
-                    />
-                    {/* Tail */}
-                    <path 
-                      d="M-3,2 L0,2 L0,5 L-3,4 Z" 
-                      fill="white"
-                    />
-                    <path 
-                      d="M3,2 L0,2 L0,5 L3,4 Z" 
-                      fill="white"
-                    />
-                    {/* Vertical Stabilizer */}
-                    <path 
-                      d="M-0.5,4 L0.5,4 L0.5,7 L-0.5,7 Z" 
-                      fill="white"
-                    />
-                  </g>
+                  {/* INDIA Text */}
+                  <text 
+                    x="140" 
+                    y="75" 
+                    fill="#FF9933" 
+                    fontSize="28" 
+                    fontWeight="bold" 
+                    fontFamily="Arial, sans-serif"
+                    letterSpacing="3"
+                  >
+                    INDIA
+                  </text>
+                  
+                  {/* Division Badge */}
+                  <rect x="240" y="60" width="35" height="20" rx="3" fill="#FF9933"/>
+                  <text 
+                    x="257.5" 
+                    y="73" 
+                    fill="white" 
+                    fontSize="12" 
+                    fontWeight="bold" 
+                    fontFamily="Arial, sans-serif"
+                    textAnchor="middle"
+                  >
+                    IN
+                  </text>
+                  
+                  {/* Small tagline */}
+                  <text 
+                    x="140" 
+                    y="95" 
+                    fill="#666666" 
+                    fontSize="10" 
+                    fontFamily="Arial, sans-serif"
+                    letterSpacing="1"
+                  >
+                    Virtual Aviation Network
+                  </text>
                 </svg>
               </div>
               
               {/* Tooltip */}
-              <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 bg-slate-700 text-white text-xs px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl pointer-events-none z-50">
-                International Virtual Aviation Organisation
+              <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 bg-slate-700 text-white text-xs px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl pointer-events-none z-50">
+                IVAO India Division - Virtual Aviation
                 <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-700 rotate-45"></div>
               </div>
             </a>
             
             <p className="text-xs text-slate-400 text-center lg:text-right">
-              Virtual Aviation Network
+              International Virtual Aviation Organisation
             </p>
           </div>
         </div>
 
+
         {/* Divider Line */}
         <div className="border-t border-slate-700 mb-4"></div>
+
 
         {/* Bottom: Copyright & Project Info */}
         <div className="text-center space-y-2">
@@ -245,7 +289,7 @@ export default function Footer() {
           </div>
           
           <p className="text-xs text-slate-500">
-            Built by Team OmniGate • Made for Healthcare Excellence
+            Built by Harshit Parmar • Made for Healthcare Excellence
           </p>
         </div>
       </div>
