@@ -116,7 +116,7 @@ export default function Footer() {
               
               {/* LinkedIn */}
               <a 
-                href="https://linkedin.com/in/harshitpamar" 
+                href="https://www.linkedin.com/in/harshit-parmar-80380b213/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-slate-400 hover:text-blue-400 transition-all hover:scale-110 transform"

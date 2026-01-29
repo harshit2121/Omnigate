@@ -18,7 +18,7 @@ import { usePatients, useMedications } from '../hooks/useFirebaseData';
 import { addAdministrationLog } from '../services/firebaseMedications';
 import ScanInterface from '@/components/dashboard/nurse/ScanInterface';
 import { drugInteractionsDB } from '../data/drugInteractions';
-import dilutionDatabase from '../data/dilutionDatabase'; // 🔥 NEW IMPORT
+import dilutionDatabase from '../data/dilutionDatabase';
 
 export default function NurseDashboard() {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ export default function NurseDashboard() {
   const [rackOpened, setRackOpened] = useState(false);
   const [isTriggering, setIsTriggering] = useState(false);
 
-  // 🔥 NEW: DILUTION ASSIST STATES
+  // Dilution States
   const [showDilutionChoice, setShowDilutionChoice] = useState(false);
   const [showDilutionGuide, setShowDilutionGuide] = useState(false);
   const [dilutionInfo, setDilutionInfo] = useState(null);
@@ -55,10 +55,9 @@ export default function NurseDashboard() {
     lastRackId: ''
   });
 
-  // Mobile: Show/Hide filters on mobile
   const [showFilters, setShowFilters] = useState(false);
 
-  // 🤖 AI Features States
+  // AI Features States
   const [medicationAlerts, setMedicationAlerts] = useState([]);
   const [patientRiskScore, setPatientRiskScore] = useState(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -95,7 +94,7 @@ export default function NurseDashboard() {
 
   const activeMedications = medications.filter(m => m.status === 'active');
 
-  // 🤖 AI: Analyze patient medications when authenticated
+  // AI: Analyze patient medications when authenticated
   useEffect(() => {
     if (authenticationComplete && currentPatient) {
       const patientMeds = activeMedications.filter(m => m.patientHHID === currentPatient.hhid);
@@ -106,7 +105,6 @@ export default function NurseDashboard() {
         
         const alerts = [];
         
-        // Critical interactions
         interactions.alerts.forEach(alert => {
           alerts.push({
             type: 'interaction',
@@ -118,7 +116,6 @@ export default function NurseDashboard() {
           });
         });
 
-        // Moderate warnings
         interactions.warnings.forEach(warning => {
           alerts.push({
             type: 'warning',
@@ -130,7 +127,6 @@ export default function NurseDashboard() {
           });
         });
 
-        // Contraindications
         interactions.contraindications.forEach(contra => {
           alerts.push({
             type: 'contraindication',
@@ -144,8 +140,6 @@ export default function NurseDashboard() {
 
         setMedicationAlerts(alerts);
         setShowAIPanel(alerts.length > 0);
-
-        // Calculate patient risk score
         calculateRiskScore(currentPatient, patientMeds, interactions);
       } else {
         setMedicationAlerts([]);
@@ -159,12 +153,10 @@ export default function NurseDashboard() {
     }
   }, [authenticationComplete, currentPatient, activeMedications]);
 
-  // 🤖 AI: Calculate patient risk score
   const calculateRiskScore = (patient, meds, interactions) => {
     let riskScore = 0;
     let riskFactors = [];
 
-    // Age factor
     if (patient.age > 65) {
       riskScore += 20;
       riskFactors.push('Elderly patient (>65 years)');
@@ -173,7 +165,6 @@ export default function NurseDashboard() {
       riskFactors.push('Pediatric patient');
     }
 
-    // Polypharmacy
     if (meds.length > 5) {
       riskScore += 25;
       riskFactors.push(`Polypharmacy (${meds.length} medications)`);
@@ -182,7 +173,6 @@ export default function NurseDashboard() {
       riskFactors.push(`Multiple medications (${meds.length})`);
     }
 
-    // Drug interactions
     if (interactions.alerts.length > 0) {
       riskScore += 30;
       riskFactors.push(`${interactions.alerts.length} critical drug interaction(s)`);
@@ -192,7 +182,6 @@ export default function NurseDashboard() {
       riskFactors.push(`${interactions.warnings.length} moderate interaction(s)`);
     }
 
-    // High-risk medications
     const highRiskDrugs = ['Warfarin', 'Insulin Glargine', 'Digoxin', 'Methotrexate'];
     const patientHighRiskDrugs = meds.filter(m => highRiskDrugs.includes(m.drugName));
     if (patientHighRiskDrugs.length > 0) {
@@ -200,7 +189,6 @@ export default function NurseDashboard() {
       riskFactors.push(`High-risk medication: ${patientHighRiskDrugs.map(m => m.drugName).join(', ')}`);
     }
 
-    // Determine risk level
     let riskLevel = 'Low';
     let riskColor = 'green';
     if (riskScore > 50) {
@@ -222,7 +210,6 @@ export default function NurseDashboard() {
     });
   };
 
-  // 🤖 AI: Verify medication dose before administration
   const verifyMedicationDose = (medication) => {
     const drugInfo = drugInteractionsDB.getDrugInfo(medication.drugName);
     
@@ -373,13 +360,21 @@ export default function NurseDashboard() {
     setPatientRiskScore(null);
     setShowAIPanel(false);
     setSelectedMedAIInfo(null);
-    // 🔥 NEW: Reset dilution states
     setShowDilutionChoice(false);
     setShowDilutionGuide(false);
     setDilutionInfo(null);
   };
 
-  // 🔥 MODIFIED: handleAdminister with dilution check
+  // 🔥 FIX: Centralized function to handle rack or confirmation
+  const proceedToRackOrConfirmation = (medication) => {
+    if (medication.rackId) {
+      setShowRackTrigger(true);
+      setRackOpened(false);
+    }
+    // If no rackId, confirmation modal shows automatically via render condition
+  };
+
+  // 🔥 FIX: handleAdminister with proper dilution flow
   const handleAdminister = async (medication) => {
     if (!authenticationComplete) {
       alert('⚠️ Please scan Patient and Nurse IDs first!');
@@ -398,7 +393,6 @@ export default function NurseDashboard() {
       return;
     }
 
-    // 🤖 AI: Check for critical interactions before administering
     const criticalAlerts = medicationAlerts.filter(a => 
       a.severity === 'critical' || a.severity === 'high'
     );
@@ -411,13 +405,10 @@ export default function NurseDashboard() {
       if (!proceed) return;
     }
 
-    // 🤖 AI: Get drug info
     const doseVerification = verifyMedicationDose(medication);
     setSelectedMedAIInfo(doseVerification.info);
-
     setSelectedMedication(medication);
     
-    // 🔥 NEW: CHECK IF DRUG REQUIRES DILUTION
     const requiresDilution = dilutionDatabase.requiresDilution(medication.drugName);
     
     if (requiresDilution && medication.route === 'IV') {
@@ -425,33 +416,25 @@ export default function NurseDashboard() {
       setDilutionInfo(drugDilutionInfo);
       setShowDilutionChoice(true);
     } else {
-      // Original flow
-      if (medication.rackId) {
-        setShowRackTrigger(true);
-        setRackOpened(false);
-      }
+      proceedToRackOrConfirmation(medication);
     }
   };
 
-  // 🔥 NEW: Handle dilution choice
+  // 🔥 FIX: Handle dilution choice
   const handleDilutionChoice = (choice) => {
     if (choice === 'showGuide') {
       setShowDilutionChoice(false);
       setShowDilutionGuide(true);
     } else if (choice === 'skipDilution') {
       setShowDilutionChoice(false);
-      if (selectedMedication.rackId) {
-        setShowRackTrigger(true);
-      }
+      proceedToRackOrConfirmation(selectedMedication);
     }
   };
 
-  // 🔥 NEW: Continue from dilution guide
+  // 🔥 FIX: Continue from dilution guide
   const handleContinueFromDilution = () => {
     setShowDilutionGuide(false);
-    if (selectedMedication.rackId) {
-      setShowRackTrigger(true);
-    }
+    proceedToRackOrConfirmation(selectedMedication);
   };
 
   const handleTriggerRack = async () => {
@@ -498,7 +481,7 @@ export default function NurseDashboard() {
         status: 'administered',
         notes: notes,
         rackId: selectedMedication.rackId || null,
-        dilutionPerformed: dilutionInfo ? true : false, // 🔥 NEW
+        dilutionPerformed: dilutionInfo ? true : false,
         timestamp: new Date().toISOString(),
       };
 
@@ -511,7 +494,7 @@ export default function NurseDashboard() {
         setRackOpened(false);
         setNotes('');
         setSelectedMedAIInfo(null);
-        setDilutionInfo(null); // 🔥 NEW
+        setDilutionInfo(null);
       } else {
         alert(`❌ Error: ${result.error}`);
       }
@@ -585,7 +568,7 @@ export default function NurseDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-100">
       
-      {/* MOBILE-OPTIMIZED HEADER */}
+      {/* HEADER */}
       <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
         <div className="px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
@@ -618,7 +601,7 @@ export default function NurseDashboard() {
 
       <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6">
         
-        {/* MOBILE-OPTIMIZED TAB NAVIGATION */}
+        {/* TAB NAVIGATION */}
         <Card className="border-2 border-pink-200 shadow-lg mb-4">
           <CardContent className="p-2">
             <div className="grid grid-cols-2 gap-2">
@@ -660,7 +643,7 @@ export default function NurseDashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Authentication - ORIGINAL SCAN INTERFACE */}
+              {/* SCAN INTERFACE */}
               <div className="mb-4">
                 <ScanInterface
                   onScan={handleScan}
@@ -673,7 +656,7 @@ export default function NurseDashboard() {
 
               {authenticationComplete && (
                 <>
-                  {/* 🤖 AI RISK SCORE CARD */}
+                  {/* AI RISK SCORE */}
                   {patientRiskScore && (
                     <Card className={`border-2 mb-4 ${
                       patientRiskScore.color === 'red' ? 'border-red-300 bg-red-50' :
@@ -706,7 +689,7 @@ export default function NurseDashboard() {
                     </Card>
                   )}
 
-                  {/* 🤖 AI MEDICATION ALERTS */}
+                  {/* AI ALERTS */}
                   {showAIPanel && medicationAlerts.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: -20 }}
@@ -743,7 +726,7 @@ export default function NurseDashboard() {
                     </motion.div>
                   )}
 
-                  {/* MOBILE: Collapsible Search & Filters - ORIGINAL */}
+                  {/* SEARCH & FILTERS */}
                   <Card className="border-2 border-pink-200 shadow-lg mb-4">
                     <CardContent className="p-3 sm:p-4">
                       <div className="flex gap-2 mb-3 sm:mb-0">
@@ -766,7 +749,6 @@ export default function NurseDashboard() {
                         </Button>
                       </div>
 
-                      {/* Desktop: Always show filter */}
                       <div className="hidden sm:block">
                         <label className="text-sm font-semibold mb-1 block">Filter</label>
                         <select
@@ -780,7 +762,6 @@ export default function NurseDashboard() {
                         </select>
                       </div>
 
-                      {/* Mobile: Expandable filter */}
                       {showFilters && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
@@ -805,7 +786,7 @@ export default function NurseDashboard() {
                     </CardContent>
                   </Card>
 
-                  {/* MEDICATIONS GRID - ENHANCED WITH AI INFO AND DILUTION BADGE */}
+                  {/* MEDICATIONS GRID */}
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                     {filteredMedications
                       .filter(med => med.patientHHID === currentPatient.hhid)
@@ -826,7 +807,7 @@ export default function NurseDashboard() {
                           const timingStatus = canAdminister(med);
                           const todayLogs = getTodayLogs(med);
                           const doseVerification = verifyMedicationDose(med);
-                          const hasDilution = dilutionDatabase.requiresDilution(med.drugName) && med.route === 'IV'; // 🔥 NEW
+                          const hasDilution = dilutionDatabase.requiresDilution(med.drugName) && med.route === 'IV';
 
                           return (
                             <Card key={med.id} className="border-2 border-pink-200 shadow-lg hover:shadow-xl transition-all">
@@ -851,7 +832,6 @@ export default function NurseDashboard() {
                                         {med.rackId}
                                       </Badge>
                                     )}
-                                    {/* 🔥 NEW: DILUTION BADGE */}
                                     {hasDilution && (
                                       <Badge className="bg-blue-500 text-white text-[10px] shrink-0">
                                         <Droplet size={10} className="mr-1" />
@@ -887,7 +867,6 @@ export default function NurseDashboard() {
                                   </div>
                                 )}
 
-                                {/* 🤖 AI DOSE INFO */}
                                 {doseVerification.info && (
                                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 text-xs">
                                     <p className="font-semibold text-purple-900 mb-1">
@@ -923,7 +902,7 @@ export default function NurseDashboard() {
                                     onClick={() => handleAdminister(med)}
                                     className="w-full bg-gradient-to-r from-green-500 to-emerald-600 h-11 text-sm"
                                   >
-                                    {hasDilution ? ( // 🔥 NEW: Different button text
+                                    {hasDilution ? (
                                       <>
                                         <Droplet size={16} className="mr-2" />
                                         Check Dilution & Give
@@ -966,7 +945,6 @@ export default function NurseDashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Request Supplies - ORIGINAL */}
               <Card className="border-2 border-purple-200 shadow-xl">
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1007,7 +985,7 @@ export default function NurseDashboard() {
         </AnimatePresence>
       </div>
 
-      {/* 🔥 NEW: DILUTION CHOICE DIALOG */}
+      {/* 🔥 DILUTION CHOICE DIALOG */}
       {showDilutionChoice && dilutionInfo && (
         <Dialog open={showDilutionChoice} onOpenChange={setShowDilutionChoice}>
           <DialogContent className="max-w-lg">
@@ -1049,7 +1027,7 @@ export default function NurseDashboard() {
                   variant="outline"
                   className="h-14 border-2"
                 >
-                  Continue Drug Administration
+                  Continue Without Guide
                 </Button>
               </div>
             </div>
@@ -1057,7 +1035,7 @@ export default function NurseDashboard() {
         </Dialog>
       )}
 
-      {/* 🔥 NEW: DILUTION GUIDE DIALOG */}
+      {/* 🔥 DILUTION GUIDE DIALOG */}
       {showDilutionGuide && dilutionInfo && (
         <Dialog open={showDilutionGuide} onOpenChange={setShowDilutionGuide}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -1069,7 +1047,6 @@ export default function NurseDashboard() {
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Drug Info */}
               <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -1085,14 +1062,12 @@ export default function NurseDashboard() {
                 </div>
               </div>
 
-              {/* Dilution Steps */}
               {dilutionInfo.dilutionSteps.map((step, idx) => (
                 <Card key={idx} className="border-2 border-green-300 bg-green-50">
                   <div className="bg-green-100 p-4 border-b-2 border-green-300">
                     <h4 className="font-bold text-lg">Dose Range: {step.doseRange}</h4>
                   </div>
                   <CardContent className="p-4 space-y-4">
-                    {/* Step 1: Reconstitution */}
                     <div className="p-3 bg-white border-2 border-blue-200 rounded-lg">
                       <Badge className="bg-blue-600 mb-2">STEP 1</Badge>
                       <p className="text-sm font-semibold">Reconstitution</p>
@@ -1102,7 +1077,6 @@ export default function NurseDashboard() {
                       </p>
                     </div>
 
-                    {/* Step 2: Infusion Fluid */}
                     <div className="p-3 bg-white border-2 border-purple-200 rounded-lg">
                       <Badge className="bg-purple-600 mb-2">STEP 2</Badge>
                       <p className="text-sm font-semibold">Infusion Fluid</p>
@@ -1112,7 +1086,6 @@ export default function NurseDashboard() {
                       </p>
                     </div>
 
-                    {/* Compatible Diluents */}
                     <div className="p-3 bg-white border-2 border-indigo-200 rounded-lg">
                       <p className="font-bold text-sm mb-2 flex items-center gap-2">
                         <Beaker size={16} className="text-indigo-600" />
@@ -1125,7 +1098,6 @@ export default function NurseDashboard() {
                       </div>
                     </div>
 
-                    {/* Infusion Duration */}
                     <div className="p-3 bg-white border-2 border-orange-200 rounded-lg">
                       <p className="font-bold text-sm flex items-center gap-2 mb-1">
                         <Timer size={16} className="text-orange-600" />
@@ -1134,7 +1106,6 @@ export default function NurseDashboard() {
                       <p className="text-lg font-bold text-orange-700">{step.duration}</p>
                     </div>
 
-                    {/* Dilution Range */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-white border border-green-300 rounded-lg">
                         <p className="text-xs text-slate-600">Minimum</p>
@@ -1149,7 +1120,6 @@ export default function NurseDashboard() {
                 </Card>
               ))}
 
-              {/* Special Instructions */}
               {dilutionInfo.warning && (
                 <div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg">
                   <p className="font-bold text-sm text-red-900 mb-2 flex items-center gap-2">
@@ -1160,7 +1130,6 @@ export default function NurseDashboard() {
                 </div>
               )}
 
-              {/* Continue Button */}
               <Button
                 onClick={handleContinueFromDilution}
                 className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 text-lg"
@@ -1173,14 +1142,115 @@ export default function NurseDashboard() {
         </Dialog>
       )}
 
-      {/* ORIGINAL REQUEST DIALOG (UNCHANGED) - Truncated for brevity */}
-      {/* ... Keep all your original request dialog code ... */}
+      {/* 🔥 IOT RACK TRIGGER DIALOG */}
+      {showRackTrigger && selectedMedication && selectedMedication.rackId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="bg-blue-600 text-white p-4 sm:p-6 rounded-t-2xl sticky top-0">
+              <h2 className="text-lg sm:text-xl font-bold">IoT Cabinet Control</h2>
+              <p className="text-blue-100 text-xs sm:text-sm mt-1">For {currentPatient?.name}</p>
+            </div>
 
-      {/* ORIGINAL IOT RACK TRIGGER DIALOG (UNCHANGED) - Truncated for brevity */}
-      {/* ... Keep all your original rack trigger code ... */}
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                <p className="font-semibold text-base sm:text-lg">{selectedMedication.drugName}</p>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1">{selectedMedication.dose}</p>
+                <Badge variant="outline" className="mt-2">Rack {selectedMedication.rackId}</Badge>
+              </div>
 
-      {/* ORIGINAL FINAL CONFIRMATION MODAL (WITH DILUTION INFO) */}
-      {selectedMedication && !showRackTrigger && !showDilutionChoice && !showDilutionGuide && (selectedMedication.rackId ? rackOpened : true) && (
+              {selectedMedAIInfo && (
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                  <p className="font-bold text-sm text-purple-900 mb-2">
+                    <Brain size={14} className="inline mr-1" />
+                    AI Drug Information
+                  </p>
+                  {selectedMedAIInfo.warnings && selectedMedAIInfo.warnings.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-purple-800">Warnings</p>
+                      {selectedMedAIInfo.warnings.slice(0, 2).map((warning, idx) => (
+                        <p key={idx} className="text-xs text-purple-700">• {warning}</p>
+                      ))}
+                    </div>
+                  )}
+                  {selectedMedAIInfo.maxDose && (
+                    <p className="text-xs text-purple-700 mt-2">
+                      <strong>Max Dose:</strong> {selectedMedAIInfo.maxDose}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="bg-slate-100 rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col items-center">
+                  <div className={`w-24 h-32 sm:w-32 sm:h-40 border-4 rounded-lg flex items-center justify-center ${
+                    rackOpened ? 'border-green-500 bg-green-50' : 'border-slate-400 bg-white'
+                  }`}>
+                    {rackOpened ? (
+                      <Unlock size={40} className="text-green-500" />
+                    ) : (
+                      <Lock size={40} className="text-slate-400" />
+                    )}
+                  </div>
+                  <p className="mt-4 font-medium text-center">
+                    {rackOpened ? 'Rack OPEN' : 'Rack LOCKED'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                {!rackOpened ? (
+                  <Button
+                    onClick={handleTriggerRack}
+                    disabled={isTriggering}
+                    className="flex-1 h-12 bg-blue-600"
+                  >
+                    {isTriggering ? (
+                      <>
+                        <Loader2 className="mr-2 animate-spin" />
+                        Triggering...
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="mr-2" />
+                        Trigger Cabinet
+                      </>
+                    )}
+                  </Button>
+                ) : null}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRackTrigger(false)}
+                  className="sm:w-auto h-12 hidden sm:block"
+                >
+                  Cancel
+                </Button>
+                {rackOpened && (
+                  <Button
+                    onClick={() => {
+                      setShowRackTrigger(false);
+                    }}
+                    className="flex-1 h-12 bg-green-600"
+                  >
+                    <CheckCircle2 className="mr-2" />
+                    Continue
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* 🔥 FINAL CONFIRMATION MODAL */}
+      {selectedMedication && 
+       !showDilutionChoice && 
+       !showDilutionGuide && 
+       !showRackTrigger && 
+       (selectedMedication.rackId ? rackOpened : true) && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <motion.div
             initial={{ y: '100%' }}
@@ -1222,7 +1292,6 @@ export default function NurseDashboard() {
                   <Badge variant="outline" className="font-mono mt-1 text-xs">{currentNurse?.id}</Badge>
                 </div>
 
-                {/* 🔥 NEW: Dilution Confirmation */}
                 {dilutionInfo && (
                   <div className="p-3 bg-green-50 rounded-lg border-2 border-green-300">
                     <p className="text-xs font-semibold text-green-900">
@@ -1241,7 +1310,6 @@ export default function NurseDashboard() {
                   </div>
                 )}
 
-                {/* 🤖 AI INFO IN CONFIRMATION */}
                 {selectedMedAIInfo && selectedMedAIInfo.commonSideEffects && (
                   <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                     <p className="text-xs font-semibold text-purple-900 mb-1">
@@ -1274,7 +1342,7 @@ export default function NurseDashboard() {
                     setRackOpened(false);
                     setNotes('');
                     setSelectedMedAIInfo(null);
-                    setDilutionInfo(null); // 🔥 NEW
+                    setDilutionInfo(null);
                   }}
                   disabled={loading}
                   className="flex-1 h-12 hidden sm:block"
@@ -1297,6 +1365,152 @@ export default function NurseDashboard() {
                       Confirm
                     </>
                   )}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* REQUEST DIALOG */}
+      {showRequestDialog && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="bg-purple-600 text-white p-4 sm:p-6 rounded-t-2xl sticky top-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg sm:text-2xl font-bold">New Supply Request</h2>
+                  <p className="text-purple-100 text-xs sm:text-sm mt-1">
+                    For {getCurrentNurseInfo().ward}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowRequestDialog(false);
+                    setRequestItems([]);
+                    setNewRequestItem({ drugName: '', brandName: '', quantity: '', lastRackId: '' });
+                  }}
+                  className="text-white hover:bg-white/20 sm:hidden"
+                >
+                  <X size={20} />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <Card className="border-2 border-slate-200">
+                <div className="bg-slate-50 p-3 sm:p-4 border-b">
+                  <h3 className="font-bold text-sm sm:text-base">Add Item</h3>
+                </div>
+                <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                      <label className="text-xs sm:text-sm font-semibold mb-1 block">Drug Name</label>
+                      <Input
+                        placeholder="e.g., Paracetamol"
+                        value={newRequestItem.drugName}
+                        onChange={(e) => setNewRequestItem({ ...newRequestItem, drugName: e.target.value })}
+                        className="h-11"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs sm:text-sm font-semibold mb-1 block">Brand Name</label>
+                      <Input
+                        placeholder="e.g., Crocin"
+                        value={newRequestItem.brandName}
+                        onChange={(e) => setNewRequestItem({ ...newRequestItem, brandName: e.target.value })}
+                        className="h-11 border-blue-300 bg-blue-50"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                      <label className="text-xs sm:text-sm font-semibold mb-1 block">Quantity</label>
+                      <Input
+                        type="number"
+                        placeholder="100"
+                        value={newRequestItem.quantity}
+                        onChange={(e) => setNewRequestItem({ ...newRequestItem, quantity: e.target.value })}
+                        className="h-11"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs sm:text-sm font-semibold mb-1 block">Last Rack</label>
+                      <Input
+                        placeholder="R-A1"
+                        value={newRequestItem.lastRackId}
+                        onChange={(e) => setNewRequestItem({ ...newRequestItem, lastRackId: e.target.value })}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleAddRequestItem}
+                    className="w-full bg-blue-600 h-11"
+                  >
+                    <Plus size={18} className="mr-2" />
+                    Add Item
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {requestItems.length > 0 && (
+                <Card className="border-2 border-purple-200">
+                  <div className="bg-purple-50 p-3 sm:p-4 border-b">
+                    <h3 className="font-bold text-sm sm:text-base">Items ({requestItems.length})</h3>
+                  </div>
+                  <CardContent className="p-3 sm:p-4 space-y-2">
+                    {requestItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2 p-3 bg-white border rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate">{item.drugName}</p>
+                          <div className="flex flex-wrap items-center gap-1 mt-1">
+                            <Badge variant="outline" className="text-[10px] bg-blue-50">Brand: {item.brandName}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{item.quantity}</Badge>
+                            {item.lastRackId && (
+                              <Badge variant="outline" className="text-[10px] bg-purple-50">{item.lastRackId}</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveRequestItem(item.id)}
+                          className="text-red-500 hover:bg-red-50 shrink-0"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRequestDialog(false);
+                    setRequestItems([]);
+                    setNewRequestItem({ drugName: '', brandName: '', quantity: '', lastRackId: '' });
+                  }}
+                  className="flex-1 h-12 hidden sm:block"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitRequest}
+                  disabled={requestItems.length === 0}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 h-12 text-sm sm:text-base"
+                >
+                  <Send size={18} className="mr-2" />
+                  Submit ({requestItems.length})
                 </Button>
               </div>
             </div>
