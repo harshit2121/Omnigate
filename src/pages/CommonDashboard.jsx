@@ -85,6 +85,13 @@ export default function CommonDashboard() {
 
   const navigationGroups = [
     {
+      label: 'Ayush Intake & OPD',
+      items: [
+        { icon: Sparkles, label: 'MediKiosk Intake', path: '/kiosk', color: 'green', badge: 'Kiosk' },
+        { icon: Stethoscope, label: 'Ayush OPD Room', path: '/ayush-opd', color: 'amber', badge: 'AIIA' },
+      ]
+    },
+    {
       label: 'Main',
       items: [
         { icon: BarChart3, label: 'Dashboard', path: '/dashboard', color: 'blue', badge: null },
@@ -106,28 +113,10 @@ export default function CommonDashboard() {
       ]
     },
     {
-      label: 'System',
+      label: 'System & Clinical',
       items: [
+        { icon: Stethoscope, label: 'E-Prescription', path: '/doctor-prescription', color: 'indigo', badge: 'Rx' },
         { icon: Shield, label: 'Audit Log', path: '/audit-log', color: 'amber' },
-        { icon: Settings, label: 'Settings', path: '/settings', color: 'slate' },
-      ]
-    },
-    {
-      label: 'Clinical',
-      items: [
-        {
-          icon: Stethoscope,
-          label: 'E-Prescription',
-          path: '/doctor-prescription',
-          color: 'indigo',
-          badge: 'Doctor'
-        },
-        {
-          icon: Users,
-          label: 'Patient Records',
-          path: '/patient-records',
-          color: 'green'
-        }
       ]
     }
   ];
@@ -163,6 +152,7 @@ export default function CommonDashboard() {
       </AnimatePresence>
 
       {/* SIDEBAR - Fixed for Desktop, Toggle for Mobile */}
+      {/* SIDEBAR - Fixed for Desktop, Toggle for Mobile (Light Theme) */}
       <motion.aside 
         initial={false}
         animate={{ 
@@ -170,51 +160,49 @@ export default function CommonDashboard() {
           width: sidebarCollapsed ? 80 : 280
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed lg:sticky top-0 left-0 h-screen bg-slate-900 text-white flex flex-col shadow-2xl z-50"
+        className="fixed lg:sticky top-0 left-0 h-screen bg-white text-slate-800 border-r border-slate-200 flex flex-col shadow-sm z-40"
       >
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 opacity-50" />
-        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '40px 40px' }} />
-        <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-
         {/* Logo & Controls */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between relative z-10">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           {!sidebarCollapsed && (
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2.5 rounded-xl shadow-lg">
-                <Activity size={22} className="text-white" />
-              </div>
+              <img 
+                src="/Emblem_of_India.svg" 
+                alt="Emblem of India" 
+                className="h-10 w-auto object-contain"
+              />
               <div>
-                <h1 className="text-lg font-bold text-white">OmniGate</h1>
-                <p className="text-xs text-slate-400">Hospital System</p>
+                <h1 className="text-sm font-extrabold text-slate-900 leading-tight">आयुष मंत्रालय</h1>
+                <p className="text-[11px] text-slate-600 font-semibold">Ministry of Ayush • AIIA</p>
               </div>
             </div>
           )}
           
           {sidebarCollapsed && (
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2.5 rounded-xl shadow-lg mx-auto">
-              <Activity size={22} className="text-white" />
-            </div>
+            <img 
+              src="/Emblem_of_India.svg" 
+              alt="Emblem of India" 
+              className="h-8 w-auto object-contain mx-auto"
+            />
           )}
           
-          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:block p-2 hover:bg-slate-800 rounded-lg transition-colors">
-            {sidebarCollapsed ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:block p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors">
+            {sidebarCollapsed ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
           </button>
           
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 hover:bg-slate-800 rounded-lg transition-colors">
-            <X size={20} />
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors">
+            <X size={18} />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 overflow-y-auto relative z-10 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-          <div className="space-y-6 px-2">
+        <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+          <div className="space-y-5 px-2">
             {navigationGroups.map((group, groupIdx) => (
               <div key={groupIdx}>
                 {!sidebarCollapsed && (
-                  <div className="px-3 mb-2">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{group.label}</p>
+                  <div className="px-3 mb-1.5">
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{group.label}</p>
                   </div>
                 )}
                 <div className="space-y-1">
@@ -223,45 +211,26 @@ export default function CommonDashboard() {
                     return (
                       <motion.button
                         key={idx}
-                        whileHover={{ scale: 1.02, x: 4 }}
+                        whileHover={{ scale: 1.01, x: 2 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleNavigate(item.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-3 text-sm rounded-xl transition-all relative group ${
-                          isActive ? 'text-white bg-slate-800 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-xs sm:text-sm rounded-xl transition-all relative group font-bold ${
+                          isActive 
+                            ? 'text-white bg-emerald-800 shadow-sm' 
+                            : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
                         }`}
                       >
-                        {isActive && (
-                          <motion.div 
-                            layoutId="activeTab"
-                            className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full ${
-                              item.color === 'blue' ? 'bg-blue-500' :
-                              item.color === 'green' ? 'bg-green-500' :
-                              item.color === 'purple' ? 'bg-purple-500' :
-                              item.color === 'orange' ? 'bg-orange-500' :
-                              item.color === 'cyan' ? 'bg-cyan-500' :
-                              item.color === 'amber' ? 'bg-amber-500' : 'bg-slate-500'
-                            }`}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          />
-                        )}
-                        <div className={`p-2 rounded-lg transition-all relative ${
-                          isActive 
-                            ? item.color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
-                              item.color === 'green' ? 'bg-green-500/20 text-green-400' :
-                              item.color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
-                              item.color === 'orange' ? 'bg-orange-500/20 text-orange-400' :
-                              item.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-400' :
-                              item.color === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-500/20 text-slate-400'
-                            : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-700'
+                        <div className={`p-1.5 rounded-lg transition-all relative ${
+                          isActive ? 'bg-emerald-950 text-white' : 'bg-slate-100 text-emerald-800'
                         }`}>
-                          <item.icon size={18} />
+                          <item.icon size={16} />
                           {item.badge && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                            <span className="absolute -top-1 -right-1 px-1 bg-amber-500 text-slate-950 text-[9px] rounded-full font-extrabold">
                               {item.badge}
                             </span>
                           )}
                         </div>
-                        {!sidebarCollapsed && <span className="font-medium flex-1 text-left">{item.label}</span>}
+                        {!sidebarCollapsed && <span className="flex-1 text-left">{item.label}</span>}
                       </motion.button>
                     );
                   })}
@@ -271,43 +240,20 @@ export default function CommonDashboard() {
           </div>
         </nav>
 
-        {/* Quick Actions */}
-        {!sidebarCollapsed && (
-          <div className="p-4 border-t border-slate-800 relative z-10">
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-3 mb-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={16} className="text-blue-400" />
-                <p className="text-xs font-semibold text-slate-300">Quick Actions</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setCommandPalette(true)} className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-xs text-slate-300 hover:text-white transition-colors">
-                  <Search size={14} className="mx-auto mb-1" />
-                  Search
-                </button>
-                <button className="p-2 bg-slate-800/50 hover:bg-slate-800 rounded-lg text-xs text-slate-300 hover:text-white transition-colors">
-                  <HelpCircle size={14} className="mx-auto mb-1" />
-                  Help
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* User Profile */}
-        <div className="p-4 border-t border-slate-800 relative z-10">
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-3`}>
+        <div className="p-3 border-t border-slate-200 bg-slate-50">
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2`}>
             {!sidebarCollapsed ? (
               <>
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-sm font-bold shadow-lg flex-shrink-0 relative">
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs">
                     HP
-                    <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full"></span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">Harshit Pamar</p>
-                    <p className="text-xs text-slate-400 capitalize flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                      {userRole}
+                    <p className="text-xs font-bold text-slate-900 truncate">Harshit Parmar</p>
+                    <p className="text-[10px] text-slate-500 capitalize flex items-center gap-1 font-semibold">
+                      <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
+                      AIIA Staff
                     </p>
                   </div>
                 </div>
@@ -317,15 +263,14 @@ export default function CommonDashboard() {
                     localStorage.removeItem('username');
                     navigate('/login');
                   }}
-                  className="p-2 hover:bg-red-500/20 rounded-lg text-red-400 transition-colors flex-shrink-0"
+                  className="p-1.5 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} />
                 </button>
               </>
             ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-sm font-bold shadow-lg relative">
+              <div className="w-8 h-8 bg-emerald-700 rounded-full flex items-center justify-center text-xs font-bold text-white">
                 HP
-                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full"></span>
               </div>
             )}
           </div>

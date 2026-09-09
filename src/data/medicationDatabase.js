@@ -1,7 +1,13 @@
-// 💊 COMPLETE INDIAN HOSPITAL MEDICATION DATABASE - 500+ DRUGS
-// ✅ All basic drugs + Pantoprazole + Azithromycin + Hospital-grade data
+import { INDIAN_MEDICINES_DATASET } from './indianMedicinesDataset';
+import { AYURGENIX_DATASET } from './ayurGenixDataset';
+import { AYUSH_FORMULATIONS_DATASET, MODERN_MEDICATIONS_DATASET } from './ayushFormulationsDataset';
 
+// 💊 COMPLETE INDIAN HOSPITAL & AYUSH MEDICATION DATABASE
 const medicationDatabase = {
+  indianMedicines: INDIAN_MEDICINES_DATASET || [],
+  ayurGenixProtocols: AYURGENIX_DATASET || [],
+  ayushFormulations: AYUSH_FORMULATIONS_DATASET || [],
+  modernMedications: MODERN_MEDICATIONS_DATASET || [],
   drugs: [
     // 🔥 1. ANALGESICS & ANTIPYRETICS (20+ drugs)
     {
@@ -168,63 +174,214 @@ const medicationDatabase = {
     'Oral', 'IV', 'IM', 'SC', 'Inhaler', 'Nebulization', 'Topical', 'Sublingual'
   ],
 
-  // 🔍 ENHANCED SEARCH (Works with 500+ drugs)
-  searchDrugs(query) {
+  // 🔍 ENHANCED UNIFIED MULTI-SYSTEM SEARCH
+  searchDrugs(query, system = 'all') {
     if (!query || query.length < 2) return [];
     const lowerQuery = query.toLowerCase().trim();
-    
-    return this.drugs
-      .filter(drug => 
-        drug.name.toLowerCase().includes(lowerQuery) ||
-        drug.genericName.toLowerCase().includes(lowerQuery) ||
-        drug.brands.some(brand => brand.toLowerCase().includes(lowerQuery))
-      )
-      .slice(0, 10)
-      .map(drug => ({
-        id: drug.id, name: drug.name, genericName: drug.genericName,
-        category: drug.category, brands: drug.brands.slice(0, 3)
+    const results = [];
+
+    // 1. Search Core Hospital Drugs
+    if (system === 'all' || system === 'allopathic') {
+      const coreMatches = this.drugs.filter(drug => 
+        (drug.name && drug.name.toLowerCase().includes(lowerQuery)) ||
+        (drug.genericName && drug.genericName.toLowerCase().includes(lowerQuery)) ||
+        (drug.brands && drug.brands.some(b => b.toLowerCase().includes(lowerQuery)))
+      ).slice(0, 6).map(d => ({
+        id: d.id,
+        name: d.name,
+        genericName: d.genericName,
+        category: d.category,
+        system: 'allopathic',
+        brands: d.brands || [],
+        commonDoses: d.commonDoses || ['500mg'],
+        defaultFrequency: d.defaultFrequency || 'OD',
+        price: d.price || '20'
       }));
+      results.push(...coreMatches);
+    }
+
+    // 2. Search Ayurvedic Pharmacopoeia Dataset
+    if (system === 'all' || system === 'ayurvedic') {
+      const ayurMatches = (this.ayushFormulations || []).filter(item =>
+        (item.name && item.name.toLowerCase().includes(lowerQuery)) ||
+        (item.sanskritName && item.sanskritName.toLowerCase().includes(lowerQuery)) ||
+        (item.indications && item.indications.some(ind => ind.toLowerCase().includes(lowerQuery))) ||
+        (item.ingredients && item.ingredients.some(ing => ing.toLowerCase().includes(lowerQuery)))
+      ).slice(0, 8).map(a => ({
+        id: a.id,
+        name: a.name,
+        genericName: a.kalpana || 'Classical Kalpana',
+        category: `🌿 Ayush (${a.kalpana || 'Ayurvedic'})`,
+        system: 'ayurvedic',
+        kalpana: a.kalpana,
+        classicalText: a.classicalText,
+        standardDose: a.standardDose,
+        anupana: a.defaultAnupana,
+        sevanaKala: a.aushadhaSevanaKala,
+        rasa: a.rasa,
+        virya: a.virya,
+        vipaka: a.vipaka,
+        indications: a.indications
+      }));
+      results.push(...ayurMatches);
+    }
+
+    // 3. Search Indian Commercial Medicines Dataset (from public/indian_medicine_data.json)
+    if (system === 'all' || system === 'allopathic') {
+      const indianMatches = (this.indianMedicines || []).filter(item =>
+        (item.name && item.name.toLowerCase().includes(lowerQuery)) ||
+        (item.composition1 && item.composition1.toLowerCase().includes(lowerQuery)) ||
+        (item.manufacturer && item.manufacturer.toLowerCase().includes(lowerQuery))
+      ).slice(0, 10).map(m => ({
+        id: m.id,
+        name: m.name,
+        genericName: m.composition1 || m.name,
+        composition1: m.composition1,
+        composition2: m.composition2,
+        category: `💊 Allopathic (${m.packSize || 'Rx'})`,
+        system: 'allopathic',
+        brands: [m.name],
+        manufacturer: m.manufacturer,
+        price: m.price || '0',
+        commonDoses: ['1 Tablet', '1 Capsule', '5ml', '10ml'],
+        defaultFrequency: 'OD'
+      }));
+      results.push(...indianMatches);
+    }
+
+    return results.slice(0, 16);
+  },
+
+  // 🏥 Search AyurGenix Clinical Disease & Herbal Protocols (from AyurGenixAI_Dataset.csv)
+  searchDiseaseProtocols(query) {
+    if (!query || query.length < 2) {
+      return (this.ayurGenixProtocols || []).slice(0, 12);
+    }
+    const q = query.toLowerCase().trim();
+    return (this.ayurGenixProtocols || []).filter(item =>
+      (item.Disease && item.Disease.toLowerCase().includes(q)) ||
+      (item['Hindi Name'] && item['Hindi Name'].includes(q)) ||
+      (item.Symptoms && item.Symptoms.toLowerCase().includes(q)) ||
+      (item['Ayurvedic Herbs'] && item['Ayurvedic Herbs'].toLowerCase().includes(q)) ||
+      (item.Doshas && item.Doshas.toLowerCase().includes(q))
+    ).slice(0, 15);
   },
 
   getDrugDetails(drugName) {
-    return this.drugs.find(drug => 
-      drug.name.toLowerCase() === drugName.toLowerCase() ||
-      drug.genericName.toLowerCase() === drugName.toLowerCase()
+    if (!drugName) return null;
+    const lower = drugName.toLowerCase();
+    
+    // Check core drugs
+    const core = this.drugs.find(d => 
+      (d.name && d.name.toLowerCase() === lower) ||
+      (d.genericName && d.genericName.toLowerCase() === lower) ||
+      (d.brands && d.brands.some(b => b.toLowerCase() === lower))
     );
+    if (core) return { ...core, system: 'allopathic' };
+
+    // Check Ayush Formulations
+    const ayur = (this.ayushFormulations || []).find(a => 
+      (a.name && a.name.toLowerCase() === lower) ||
+      (a.sanskritName && a.sanskritName.toLowerCase() === lower)
+    );
+    if (ayur) return { ...ayur, system: 'ayurvedic' };
+
+    // Check Indian Medicines
+    const ind = (this.indianMedicines || []).find(m => 
+      m.name && m.name.toLowerCase() === lower
+    );
+    if (ind) {
+      return {
+        id: ind.id,
+        name: ind.name,
+        genericName: ind.composition1 || ind.name,
+        category: 'Allopathic Medicine',
+        system: 'allopathic',
+        brands: [ind.name],
+        commonDoses: ['1 Tablet', '1 Capsule', '1 Dose'],
+        routes: ['Oral'],
+        frequencies: ['OD', 'BD', 'TID'],
+        defaultFrequency: 'OD',
+        price: ind.price
+      };
+    }
+
+    return null;
   },
 
   getAutoSuggestions(drugName) {
     const drug = this.getDrugDetails(drugName);
-    if (!drug) return null;
+    if (!drug) {
+      return {
+        brands: [drugName],
+        doses: ['1 Unit', '500mg', '250mg', '1 Vati', '5g'],
+        routes: ['Oral'],
+        frequencies: ['OD', 'BD', 'TID'],
+        defaultFrequency: 'OD',
+        timings: ['09:00'],
+        duration: '14 days'
+      };
+    }
+
+    if (drug.system === 'ayurvedic') {
+      return {
+        drugId: drug.id,
+        name: drug.name,
+        system: 'ayurvedic',
+        kalpana: drug.kalpana || 'Vati',
+        classicalText: drug.classicalText,
+        doses: [drug.standardDose || '1 Vati (250mg)', '2 Vati (500mg)', '5g Churna', '15ml Kwath'],
+        routes: ['Oral'],
+        frequencies: ['BD', 'TID', 'OD'],
+        defaultFrequency: 'BD',
+        sevanaKala: drug.aushadhaSevanaKala || 'Pragbhakta (Before food)',
+        anupana: drug.defaultAnupana || 'Lukewarm water',
+        duration: '14 days',
+        indications: drug.indications
+      };
+    }
     
-    const freqOption = this.frequencyOptions.find(f => f.value === drug.defaultFrequency);
+    const freqOption = this.frequencyOptions.find(f => f.value === (drug.defaultFrequency || 'OD'));
     
     return {
-      drugId: drug.id, brands: drug.brands, doses: drug.commonDoses,
-      routes: drug.routes, frequencies: drug.frequencies,
-      defaultFrequency: drug.defaultFrequency, timings: freqOption?.timings || [],
-      duration: drug.defaultDuration, category: drug.category,
-      indication: drug.indication, contraindications: drug.contraindications,
-      rackId: drug.rackId, stockStatus: drug.stockStatus, price: drug.price, schedule: drug.schedule
+      drugId: drug.id,
+      name: drug.name,
+      system: 'allopathic',
+      brands: drug.brands || [drug.name],
+      doses: drug.commonDoses || ['500mg', '250mg', '1 Tab'],
+      routes: drug.routes || ['Oral'],
+      frequencies: drug.frequencies || ['OD', 'BD', 'TID', 'QID'],
+      defaultFrequency: drug.defaultFrequency || 'OD',
+      timings: freqOption?.timings || ['09:00'],
+      duration: drug.defaultDuration || '7 days',
+      category: drug.category || 'Therapeutic',
+      indication: drug.indication,
+      price: drug.price
     };
   },
 
   checkInteractions(medications) {
-    // 500+ drug interaction rules
     const rules = {
       'Azithromycin': ['Amlodipine', 'Warfarin'],
       'Pantoprazole': ['Clopidogrel', 'Methotrexate'],
-      'Amoxicillin': ['Warfarin']
+      'Amoxicillin': ['Warfarin'],
+      'Warfarin': ['Ashwagandha', 'Ginkgo', 'Aspirin', 'NSAIDs'],
+      'Metformin': ['Alcohol', 'Cimetidine'],
+      'Atorvastatin': ['Clarithromycin', 'Erythromycin']
     };
     
     const interactions = [];
     medications.forEach((med1, i) => {
       medications.slice(i + 1).forEach(med2 => {
-        if (rules[med1.drugName]?.includes(med2.drugName) || 
-            rules[med2.drugName]?.includes(med1.drugName)) {
+        const name1 = med1.drugName || med1.name;
+        const name2 = med2.drugName || med2.name;
+        if (rules[name1]?.some(target => name2.includes(target)) || 
+            rules[name2]?.some(target => name1.includes(target))) {
           interactions.push({
-            drug1: med1.drugName, drug2: med2.drugName,
-            severity: 'Moderate', warning: `Interaction: ${med1.drugName} + ${med2.drugName}`
+            drug1: name1,
+            drug2: name2,
+            severity: 'High Warning',
+            warning: `Clinical Alert: Potential interaction identified between ${name1} and ${name2}. Monitor patient coagulation and metabolic profile.`
           });
         }
       });

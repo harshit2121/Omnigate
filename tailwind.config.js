@@ -7,6 +7,13 @@ export default {
   ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			fraunces: ['"Fraunces"', 'serif'],
+  			inter: ['"Inter"', 'system-ui', 'sans-serif'],
+  			devanagari: ['"Mukta"', '"Noto Sans Devanagari"', 'sans-serif'],
+  			hindi: ['"Mukta"', '"Noto Sans Devanagari"', 'sans-serif'],
+  			traditional: ['"Rozha One"', '"Noto Sans Devanagari"', 'serif'],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

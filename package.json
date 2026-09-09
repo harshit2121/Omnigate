@@ -11,7 +11,9 @@
   "dependencies": {
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
     "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-navigation-menu": "^1.2.22",
     "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
@@ -30,8 +32,11 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.2",
     "react-to-print": "^2.15.1",
+    "recharts": "^3.10.1",
+    "rough-notation": "^0.5.1",
     "tailwind-merge": "^2.5.4",
-    "tesseract.js": "^5.1.1"
+    "tesseract.js": "^5.1.1",
+    "vara": "^1.4.1"
   },
   "devDependencies": {
     "@types/qrcode": "^1.5.5",

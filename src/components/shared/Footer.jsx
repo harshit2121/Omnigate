@@ -1,298 +1,158 @@
-import { Heart } from 'lucide-react';
+import { Heart, Building2, ShieldCheck, PhoneCall, Globe, ExternalLink, Stethoscope, Activity, FileText, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 text-white py-8 mt-auto border-t-4 border-blue-500 shadow-2xl relative overflow-hidden">
+    <footer className="bg-[#0B132B] text-white mt-auto border-t-4 border-[#EA580C] relative overflow-hidden font-sans">
       
-      {/* Animated Background Blobs */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/10 rounded-full blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        
-        {/* Main Footer Content */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-6">
+      {/* MAIN FOOTER BODY */}
+      <div className="w-full px-4 sm:px-8 lg:px-12 py-10 sm:py-14 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 mb-10 text-xs text-slate-300">
           
-          {/* Left: Made with Love in India */}
-          <div className="flex flex-col items-center lg:items-start gap-3">
-            <div className="flex items-center gap-3 text-base sm:text-lg">
-              <span className="text-slate-300 font-medium">Made with</span>
-              <Heart className="text-red-500 fill-red-500 animate-pulse" size={22} />
-              <span className="text-slate-300 font-medium">in</span>
+          {/* Column 1: Ministry Emblem & Institute Details (5 cols) */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="flex items-start gap-4">
               
-              {/* Indian Flag SVG with Ashoka Chakra */}
-              <div className="relative group cursor-pointer">
-                <svg 
-                  width="48" 
-                  height="32" 
-                  viewBox="0 0 48 32" 
-                  className="rounded shadow-lg hover:shadow-xl transition-all hover:scale-110 transform duration-300"
-                >
-                  {/* Saffron Band */}
-                  <rect width="48" height="10.67" fill="#FF9933"/>
-                  
-                  {/* White Band */}
-                  <rect y="10.67" width="48" height="10.67" fill="#FFFFFF"/>
-                  
-                  {/* Green Band */}
-                  <rect y="21.33" width="48" height="10.67" fill="#138808"/>
-                  
-                  {/* Ashoka Chakra - Outer Circle */}
-                  <circle cx="24" cy="16" r="4.5" fill="none" stroke="#000080" strokeWidth="0.5"/>
-                  
-                  {/* Ashoka Chakra - Inner Circle */}
-                  <circle cx="24" cy="16" r="3" fill="none" stroke="#000080" strokeWidth="0.4"/>
-                  
-                  {/* Ashoka Chakra - 24 Spokes */}
-                  {[...Array(24)].map((_, i) => {
-                    const angle = (i * 15 * Math.PI) / 180;
-                    const x1 = 24 + 3 * Math.cos(angle);
-                    const y1 = 16 + 3 * Math.sin(angle);
-                    const x2 = 24 + 4.5 * Math.cos(angle);
-                    const y2 = 16 + 4.5 * Math.sin(angle);
-                    return (
-                      <line 
-                        key={i} 
-                        x1={x1} 
-                        y1={y1} 
-                        x2={x2} 
-                        y2={y2} 
-                        stroke="#000080" 
-                        strokeWidth="0.4"
-                      />
-                    );
-                  })}
-                  
-                  {/* Center dot */}
-                  <circle cx="24" cy="16" r="0.8" fill="#000080"/>
-                </svg>
-                
-                {/* Tooltip */}
-                <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl pointer-events-none">
-                  Proudly Made in India 🇮🇳
-                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-700 rotate-45"></div>
+              {/* High-Contrast White Background Badge for SVG Emblem */}
+              <div className="bg-white p-2.5 rounded-2xl shadow-md border-2 border-slate-200 flex items-center justify-center shrink-0">
+                <img 
+                  src="/Emblem_of_India.svg" 
+                  alt="National Emblem of India" 
+                  className="h-14 sm:h-16 w-auto object-contain" 
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 bg-[#1E40AF]/40 border border-blue-400/30 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-blue-200">
+                  <span>भारत सरकार • Government of India</span>
                 </div>
+                <h5 className="font-black text-white text-base sm:text-lg leading-tight">
+                  अखिल भारतीय आयुर्वेद संस्थान (AIIA)
+                </h5>
+                <p className="text-xs font-bold text-[#EA580C]">
+                  All India Institute of Ayurveda • Ministry of Ayush
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  Gautampuri, Sarita Vihar, Mathura Road, New Delhi, Delhi - 110076
+                </p>
               </div>
             </div>
-            
-            <p className="text-xs sm:text-sm text-slate-400 text-center lg:text-left">
-              Empowering healthcare with IoT technology
+
+            <p className="text-xs text-slate-300 leading-relaxed max-w-xl font-medium pt-1">
+              <b>MediKiosk</b> is the digital clinical intake & case-taking kiosk terminal deployed for Ayush OPD departments. Generates bilingual clinical case sheets, Prakriti dosha assessments, and OCR prescription conversions.
             </p>
           </div>
 
+          {/* Column 2: Clinical Portals (3 cols) */}
+          <div className="lg:col-span-3 space-y-3">
+            <h5 className="font-black text-white text-xs uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="w-1.5 h-3.5 bg-[#EA580C] rounded-full"></span>
+              <span>Clinical Modules & Portals</span>
+            </h5>
+            <ul className="space-y-2 text-xs font-medium">
+              <li>
+                <Link to="/kiosk" className="hover:text-amber-400 transition-colors flex items-center gap-2">
+                  <Building2 size={14} className="text-[#EA580C]" />
+                  <span>Patient MediKiosk Self-Service</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/ayush-opd" className="hover:text-amber-400 transition-colors flex items-center gap-2">
+                  <Stethoscope size={14} className="text-[#1E40AF]" />
+                  <span>Physician OPD Consultation Room</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/dashboard" className="hover:text-amber-400 transition-colors flex items-center gap-2">
+                  <Activity size={14} className="text-emerald-400" />
+                  <span>OmniGate HMS Dashboard</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/patient-records" className="hover:text-amber-400 transition-colors flex items-center gap-2">
+                  <FileText size={14} className="text-purple-400" />
+                  <span>Patient Health Records (EHR)</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
 
-          {/* Center: Creator Info */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex flex-col sm:flex-row items-center gap-2 text-sm sm:text-base">
-              <span className="text-slate-400">Created by</span>
-              <a 
-                href="https://github.com/harshitpamar" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="font-bold text-blue-400 hover:text-blue-300 transition-colors hover:underline flex items-center gap-2"
-              >
-                {/* GitHub Icon SVG */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                </svg>
-                Harshit Parmar
-              </a>
-            </div>
-            
-            {/* Social Links SVG */}
-            <div className="flex items-center gap-4">
-              {/* GitHub */}
-              <a 
-                href="https://github.com/harshit21pamar" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-slate-400 hover:text-white transition-all hover:scale-110 transform"
-                aria-label="GitHub"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                </svg>
-              </a>
-              
-              {/* LinkedIn */}
-              <a 
-                href="https://www.linkedin.com/in/harshit-parmar-80380b213/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-slate-400 hover:text-blue-400 transition-all hover:scale-110 transform"
-                aria-label="LinkedIn"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-              </a>
-              
-              {/* Email */}
-              <a 
-                href="mailto:harshit@example.com" 
-                className="text-slate-400 hover:text-red-400 transition-all hover:scale-110 transform"
-                aria-label="Email"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </a>
+          {/* Column 3: National Portals & Standards (2 cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h5 className="font-black text-white text-xs uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="w-1.5 h-3.5 bg-blue-500 rounded-full"></span>
+              <span>National Health Links</span>
+            </h5>
+            <ul className="space-y-2 text-xs font-medium">
+              <li>
+                <a href="https://ayush.gov.in" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                  <ExternalLink size={12} className="text-slate-400" />
+                  <span>Ministry of Ayush</span>
+                </a>
+              </li>
+              <li>
+                <a href="https://aiia.gov.in" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                  <ExternalLink size={12} className="text-slate-400" />
+                  <span>AIIA Official Portal</span>
+                </a>
+              </li>
+              <li>
+                <a href="https://abdm.gov.in" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                  <ExternalLink size={12} className="text-slate-400" />
+                  <span>ABDM Sandbox (NHA)</span>
+                </a>
+              </li>
+              <li>
+                <a href="https://nhp.gov.in" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                  <ExternalLink size={12} className="text-slate-400" />
+                  <span>National Health Portal</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: 24x7 Helplines & Emergency (2 cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h5 className="font-black text-white text-xs uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="w-1.5 h-3.5 bg-emerald-500 rounded-full"></span>
+              <span>24x7 Helplines</span>
+            </h5>
+            <div className="space-y-2.5">
+              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1">
+                <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px]">
+                  <PhoneCall size={13} />
+                  <span>Ayush Toll-Free:</span>
+                </div>
+                <p className="text-white font-black text-sm tracking-wide">14477</p>
+                <p className="text-[10px] text-slate-400">1800-11-22-02 (Toll Free)</p>
+              </div>
+
+              <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-0.5">
+                <p className="text-[10px] text-slate-400 font-semibold">National Health Authority:</p>
+                <p className="text-white font-bold text-xs">14415</p>
+              </div>
             </div>
           </div>
 
+        </div>
 
-          {/* Right: REAL IVAO India Logo */}
-          <div className="flex flex-col items-center lg:items-end gap-3">
-            <span className="text-xs sm:text-sm text-slate-400">In association with</span>
-            
-            <a 
-              href="https://in.ivao.aero" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="group relative"
-            >
-              {/* REAL IVAO INDIA LOGO - Using actual logo structure */}
-              <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-2xl transition-all hover:scale-105 transform duration-300">
-                <svg width="140" height="56" viewBox="0 0 280 112" className="drop-shadow-md">
-                  <defs>
-                    {/* Blue gradient for main elements */}
-                    <linearGradient id="ivaoBlue" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#0066CC"/>
-                      <stop offset="100%" stopColor="#004080"/>
-                    </linearGradient>
-                    
-                    {/* Orange gradient for India accent */}
-                    <linearGradient id="indiaOrange" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#FF9933"/>
-                      <stop offset="50%" stopColor="#FFFFFF"/>
-                      <stop offset="100%" stopColor="#138808"/>
-                    </linearGradient>
-                  </defs>
-                  
-                  {/* Main Globe/Circle Background */}
-                  <circle cx="56" cy="56" r="50" fill="url(#ivaoBlue)" stroke="#003366" strokeWidth="2"/>
-                  
-                  {/* Globe Lines (Latitude) */}
-                  <ellipse cx="56" cy="56" rx="50" ry="15" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
-                  <ellipse cx="56" cy="56" rx="50" ry="30" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
-                  
-                  {/* Globe Lines (Longitude) */}
-                  <ellipse cx="56" cy="56" rx="15" ry="50" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
-                  <ellipse cx="56" cy="56" rx="30" ry="50" fill="none" stroke="white" strokeWidth="1.5" opacity="0.4"/>
-                  <line x1="56" y1="6" x2="56" y2="106" stroke="white" strokeWidth="1.5" opacity="0.4"/>
-                  
-                  {/* Airplane Silhouette (Center) */}
-                  <g transform="translate(56, 56)">
-                    {/* Fuselage */}
-                    <ellipse cx="0" cy="0" rx="4" ry="16" fill="white"/>
-                    {/* Main Wings */}
-                    <path d="M-18,-4 L-4,-2 L-4,2 L-18,4 Z" fill="white"/>
-                    <path d="M18,-4 L4,-2 L4,2 L18,4 Z" fill="white"/>
-                    {/* Tail Wings */}
-                    <path d="M-8,10 L-2,12 L-2,16 L-8,14 Z" fill="white"/>
-                    <path d="M8,10 L2,12 L2,16 L8,14 Z" fill="white"/>
-                    {/* Vertical Stabilizer */}
-                    <rect x="-1.5" y="14" width="3" height="8" fill="white"/>
-                  </g>
-                  
-                  {/* India Tricolor Accent (Bottom of Circle) */}
-                  <path 
-                    d="M 20 90 Q 56 100, 92 90" 
-                    fill="none" 
-                    stroke="url(#indiaOrange)" 
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                  />
-                  
-                  {/* IVAO Text */}
-                  <text 
-                    x="140" 
-                    y="45" 
-                    fill="#0066CC" 
-                    fontSize="40" 
-                    fontWeight="bold" 
-                    fontFamily="Arial, sans-serif"
-                    letterSpacing="2"
-                  >
-                    IVAO
-                  </text>
-                  
-                  {/* INDIA Text */}
-                  <text 
-                    x="140" 
-                    y="75" 
-                    fill="#FF9933" 
-                    fontSize="28" 
-                    fontWeight="bold" 
-                    fontFamily="Arial, sans-serif"
-                    letterSpacing="3"
-                  >
-                    INDIA
-                  </text>
-                  
-                  {/* Division Badge */}
-                  <rect x="240" y="60" width="35" height="20" rx="3" fill="#FF9933"/>
-                  <text 
-                    x="257.5" 
-                    y="73" 
-                    fill="white" 
-                    fontSize="12" 
-                    fontWeight="bold" 
-                    fontFamily="Arial, sans-serif"
-                    textAnchor="middle"
-                  >
-                    IN
-                  </text>
-                  
-                  {/* Small tagline */}
-                  <text 
-                    x="140" 
-                    y="95" 
-                    fill="#666666" 
-                    fontSize="10" 
-                    fontFamily="Arial, sans-serif"
-                    letterSpacing="1"
-                  >
-                    Virtual Aviation Network
-                  </text>
-                </svg>
-              </div>
-              
-              {/* Tooltip */}
-              <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 bg-slate-700 text-white text-xs px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl pointer-events-none z-50">
-                IVAO India Division - Virtual Aviation
-                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-700 rotate-45"></div>
-              </div>
-            </a>
-            
-            <p className="text-xs text-slate-400 text-center lg:text-right">
-              International Virtual Aviation Organisation
-            </p>
+        {/* 3. BOTTOM INTELLECTUAL PROPERTY & CITIZEN CHARTER BAR */}
+        <div className="border-t border-slate-800/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <span>© {new Date().getFullYear()} <b>Ministry of Ayush</b> • All India Institute of Ayurveda (AIIA). All Rights Reserved.</span>
+          </div>
+
+          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+            <span className="hover:text-white transition-colors cursor-pointer">Terms & Conditions</span>
+            <span>•</span>
+            <span className="hover:text-white transition-colors cursor-pointer">Privacy Policy (DPDP 2023)</span>
+            <span>•</span>
+            <span className="hover:text-white transition-colors cursor-pointer">Hyperlinking Policy</span>
           </div>
         </div>
 
-
-        {/* Divider Line */}
-        <div className="border-t border-slate-700 mb-4"></div>
-
-
-        {/* Bottom: Copyright & Project Info */}
-        <div className="text-center space-y-2">
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-slate-400">
-            <span>© {new Date().getFullYear()}</span>
-            <span className="font-bold text-blue-400">OmniGate Hospital</span>
-            <span className="hidden sm:inline">•</span>
-            <span>IoT-Enabled Bedside Guardian</span>
-            <span className="hidden sm:inline">•</span>
-            <span>All Rights Reserved</span>
-          </div>
-          
-          <p className="text-xs text-slate-500">
-            Built by Harshit Parmar • Made for Healthcare Excellence
-          </p>
-        </div>
       </div>
+
     </footer>
   );
 }
