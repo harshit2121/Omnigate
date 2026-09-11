@@ -2,8 +2,11 @@ import { Printer, AlertTriangle, Sun, QrCode, ShieldCheck } from 'lucide-react';
 
 export default function OpdPatientSummaryTab({
   selectedCase,
+  confirmedDiagnosis = null,
+  activeGhatakas = null,
   isPrescriptionSigned,
   acceptedCases,
+  ccrasPrakritiResult,
   sampraptiSynthesis,
   prescriptions,
   dietPathya,
@@ -14,7 +17,31 @@ export default function OpdPatientSummaryTab({
   backToRoster,
   printDoctorPrescription
 }) {
-  if (!selectedCase || !sampraptiSynthesis?.patientSummary) return null;
+  if (!selectedCase) return null;
+
+  const g = ccrasPrakritiResult?.guidelines;
+  const pSum = sampraptiSynthesis?.patientSummary || {};
+
+  const summaryTitleHi = ccrasPrakritiResult?.dominantPrakritiHi 
+    ? `${ccrasPrakritiResult.dominantPrakritiHi} — सीसीआरएएस परामर्श` 
+    : (pSum.titleHi || 'रोगी परामर्श एवं प्रकृति पथ्य');
+  const summaryTitleEn = ccrasPrakritiResult?.dominantPrakriti 
+    ? `${ccrasPrakritiResult.dominantPrakriti} — CCRAS Standardized Regimen` 
+    : (pSum.titleEn || 'Clinical Consultation Record');
+
+  const overviewHi = g?.dietaryRulesHi || pSum.conditionOverviewHi || 'आपकी प्रकृति के अनुसार दोषों एवं अग्नि को संतुलित रखने हेतु आहार-विहार निर्देश।';
+  const overviewEn = g?.dietaryRulesEn || pSum.conditionOverviewEn || 'Standard dietary and lifestyle regimen.';
+
+  const pathyaHi = g?.pathyaConsumeHi ? g.pathyaConsumeHi.join(' • ') : (pSum.consumeHi || 'सुपाच्य, ताजा व सात्विक भोजन।');
+  const pathyaEn = g?.pathyaConsumeEn ? g.pathyaConsumeEn.join(' • ') : (pSum.consumeEn || 'Fresh, easily digestible meals.');
+
+  const apathyaHi = g?.apatyaAvoidHi ? g.apatyaAvoidHi.join(' • ') : (pSum.avoidHi || 'ठंडा, बासी व अत्यधिक मिर्च-मसाले वाला खाना।');
+  const apathyaEn = g?.apatyaAvoidEn ? g.apatyaAvoidEn.join(' • ') : (pSum.avoidEn || 'Cold, stale, highly pungent foods.');
+
+  const viharaHi = g?.viharaLifestyleHi || pSum.homeCareHi || 'नियमित समय पर शयन एवं हल्का व्यायाम।';
+  const viharaEn = g?.viharaLifestyleEn || pSum.homeCareEn || 'Consistent sleep schedule and moderate exercise.';
+
+  const warningHi = pSum.warningSignHi || 'तीव्र लक्षण, असहनीय वेदना या बुखार बढ़ने पर तुरंत आपातकालीन चिकित्सा परामर्श लें।';
 
   return (
     <div style={{ background: 'white', border: '1px solid #C5D5E5' }}>
@@ -44,9 +71,9 @@ export default function OpdPatientSummaryTab({
                   gender: selectedCase.patient?.gender,
                   uhid: selectedCase.uhid,
                   abhaId: selectedCase.patient?.abhaId,
-                  diagnosis: selectedCase.intake?.complaintLabel || 'Amlapitta',
-                  icdCode: selectedCase.intake?.namasteCode || 'NAMASTE-AYU-AML-01',
-                  prakriti: selectedCase.pariksha?.prakritiResult?.dominant,
+                  diagnosis: confirmedDiagnosis?.name || selectedCase.assessment?.confirmedDiagnosis?.name || selectedCase.intake?.complaintLabel || 'Amlapitta',
+                  icdCode: confirmedDiagnosis?.namasteCode || selectedCase.assessment?.confirmedDiagnosis?.namasteCode || selectedCase.intake?.namasteCode || 'NAMASTE-AYU-AML-01',
+                  prakriti: ccrasPrakritiResult?.dominantPrakriti || selectedCase.pariksha?.prakritiResult?.dominant,
                   medications: prescriptions.map(p => ({
                     drugName: p.name,
                     system: p.system,
@@ -84,10 +111,10 @@ export default function OpdPatientSummaryTab({
             AIIA • रोगी परामर्श पत्र (Patient Consultation Summary)
           </div>
           <div style={{ color: 'white', fontSize: 13, fontWeight: 'bold', marginTop: 2 }}>
-            {sampraptiSynthesis.patientSummary.titleHi}
+            {summaryTitleHi}
           </div>
           <div style={{ color: '#F0D0A0', fontSize: 10, marginTop: 1 }}>
-            {sampraptiSynthesis.patientSummary.titleEn}
+            {summaryTitleEn}
           </div>
         </div>
         <button
@@ -105,8 +132,8 @@ export default function OpdPatientSummaryTab({
           <div style={{ fontSize: 10, fontWeight: 'bold', color: '#003F6B', textTransform: 'uppercase', marginBottom: 4 }}>
             १. आपकी समस्या का सरल विवरण — Understanding Your Health Condition
           </div>
-          <p style={{ fontWeight: 'bold', color: '#1A1A2E', fontSize: 11, lineHeight: 1.7 }}>{sampraptiSynthesis.patientSummary.conditionOverviewHi}</p>
-          <p style={{ color: '#555', fontSize: 10, marginTop: 4, lineHeight: 1.6 }}>{sampraptiSynthesis.patientSummary.conditionOverviewEn}</p>
+          <p style={{ fontWeight: 'bold', color: '#1A1A2E', fontSize: 11, lineHeight: 1.7 }}>{overviewHi}</p>
+          <p style={{ color: '#555', fontSize: 10, marginTop: 4, lineHeight: 1.6 }}>{overviewEn}</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -114,15 +141,15 @@ export default function OpdPatientSummaryTab({
             <div style={{ fontSize: 10, fontWeight: 'bold', color: '#1A7A3C', textTransform: 'uppercase', marginBottom: 4 }}>
               ✓ २. हितकर आहार — Pathya (Foods to Favor)
             </div>
-            <p style={{ fontWeight: 'bold', color: '#0A3A20', fontSize: 11, lineHeight: 1.7 }}>{sampraptiSynthesis.patientSummary.consumeHi}</p>
-            <p style={{ color: '#2A6040', fontSize: 10, marginTop: 4, lineHeight: 1.6 }}>{sampraptiSynthesis.patientSummary.consumeEn}</p>
+            <p style={{ fontWeight: 'bold', color: '#0A3A20', fontSize: 11, lineHeight: 1.7 }}>{pathyaHi}</p>
+            <p style={{ color: '#2A6040', fontSize: 10, marginTop: 4, lineHeight: 1.6 }}>{pathyaEn}</p>
           </div>
           <div style={{ padding: '8px 12px', background: '#FEE8E8', border: '1px solid #F0A0A0', borderLeft: '4px solid #AA0000' }}>
             <div style={{ fontSize: 10, fontWeight: 'bold', color: '#AA0000', textTransform: 'uppercase', marginBottom: 4 }}>
               ✗ ३. परहेज — Apathya (Foods to Avoid)
             </div>
-            <p style={{ fontWeight: 'bold', color: '#3A0A0A', fontSize: 11, lineHeight: 1.7 }}>{sampraptiSynthesis.patientSummary.avoidHi}</p>
-            <p style={{ color: '#7A2020', fontSize: 10, marginTop: 4, lineHeight: 1.6 }}>{sampraptiSynthesis.patientSummary.avoidEn}</p>
+            <p style={{ fontWeight: 'bold', color: '#3A0A0A', fontSize: 11, lineHeight: 1.7 }}>{apathyaHi}</p>
+            <p style={{ color: '#7A2020', fontSize: 10, marginTop: 4, lineHeight: 1.6 }}>{apathyaEn}</p>
           </div>
         </div>
 
@@ -130,8 +157,8 @@ export default function OpdPatientSummaryTab({
           <div style={{ fontSize: 10, fontWeight: 'bold', color: '#003F6B', textTransform: 'uppercase', marginBottom: 4 }}>
             ४. घर पर दिनचर्या — Home Care & Dinacharya Guidance
           </div>
-          <p style={{ fontWeight: 'bold', color: '#1A1A2E', fontSize: 11, lineHeight: 1.7 }}>{sampraptiSynthesis.patientSummary.homeCareHi}</p>
-          <p style={{ color: '#555', fontSize: 10, marginTop: 4 }}>{sampraptiSynthesis.patientSummary.homeCareEn}</p>
+          <p style={{ fontWeight: 'bold', color: '#1A1A2E', fontSize: 11, lineHeight: 1.7 }}>{viharaHi}</p>
+          <p style={{ color: '#555', fontSize: 10, marginTop: 4 }}>{viharaEn}</p>
         </div>
 
         {/* 5. Seasonal Ritucharya & Prakriti Integration */}
@@ -162,7 +189,7 @@ export default function OpdPatientSummaryTab({
             <div style={{ fontSize: 10, fontWeight: 'bold', color: '#7A3000', textTransform: 'uppercase', marginBottom: 2 }}>
               सावधानी एवं आपातकालीन निर्देश (Red Flags & Warnings):
             </div>
-            <p style={{ fontSize: 11, color: '#5A2000', fontWeight: '600', lineHeight: 1.6 }}>{sampraptiSynthesis.patientSummary.warningSignHi}</p>
+            <p style={{ fontSize: 11, color: '#5A2000', fontWeight: '600', lineHeight: 1.6 }}>{warningHi}</p>
           </div>
         </div>
 

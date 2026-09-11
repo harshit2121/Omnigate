@@ -11,7 +11,9 @@ import { Badge } from '../ui/badge';
 import HealthIcon from '../ui/HealthIcon';
 import { CLINICAL_DEPARTMENTS, CHIEF_COMPLAINTS, evaluateRedFlags } from '../../data/socratesFramework';
 import dynamicClinicalAiService from '../../services/dynamicClinicalAiService';
+import { ayushAiCopilotService } from '../../services/ayushAiCopilotService';
 import voiceAssistant from '../../services/voiceAssistant';
+import NidanAiCard from '../ui/NidanAiCard';
 
 export default function ConversationalIntakeStep({
   intakeData,
@@ -29,7 +31,12 @@ export default function ConversationalIntakeStep({
   const [isListening, setIsListening] = useState(false);
   const [spokenTranscript, setSpokenTranscript] = useState('');
   const [clinicalMode, setClinicalMode] = useState(intakeData.clinicalMode || 'ayush');
-  const [activeIntakeTab, setActiveIntakeTab] = useState('hpi'); // 'hpi' | 'past_history' | 'current_meds'
+  const [activeIntakeTab, setActiveIntakeTab] = useState('hpi'); // 'hpi' | 'ai_inquiries' | 'past_history' | 'current_meds'
+
+  // Dynamic AI Clinical Inquiries for Kiosk Patient
+  const [kioskAiInquiries, setKioskAiInquiries] = useState([]);
+  const [aiInquiriesResponse, setAiInquiriesResponse] = useState(intakeData.aiInquiriesResponse || {});
+  const [isLoadingAiInquiries, setIsLoadingAiInquiries] = useState(false);
 
   // Past Clinical History & Medications State (Current + Previous, Modern + Ayurvedic)
   const [pastConditions, setPastConditions] = useState(intakeData.pastConditions || []);
@@ -110,6 +117,20 @@ export default function ConversationalIntakeStep({
         currentLang
       );
       setActiveQuestions(dynamicQs);
+
+      // Also generate AI Clinical Inquiries for the patient
+      setIsLoadingAiInquiries(true);
+      ayushAiCopilotService.generateKioskInquiries({
+        chiefComplaint: complaint.label,
+        complaintId: complaint.id,
+        currentLang
+      }).then(inquiries => {
+        setKioskAiInquiries(inquiries);
+        setIsLoadingAiInquiries(false);
+      }).catch(err => {
+        console.warn('Failed generating kiosk AI inquiries:', err);
+        setIsLoadingAiInquiries(false);
+      });
     } catch (err) {
       console.warn('Failed generating dynamic questions:', err);
     } finally {
@@ -241,9 +262,10 @@ export default function ConversationalIntakeStep({
       <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-2 rounded-2xl border-2 border-[#DCE3EC] shadow-xs gap-2">
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto p-1">
           {[
-            { id: 'hpi', labelEn: '1. Present Illness (HPI - SOCRATES)', labelHi: '१. वर्तमान मुख्य समस्या (HPI)', icon: Stethoscope },
-            { id: 'past_history', labelEn: '2. Past History & Allergies', labelHi: '२. पुराना इतिहास व एलर्जी', icon: History },
-            { id: 'current_meds', labelEn: '3. Medication History (Current & Past)', labelHi: '३. दवा इतिहास (वर्तमान व पूर्व)', icon: Pill }
+            { id: 'hpi', labelEn: '1. Present Illness (HPI - SOCRATES)', labelHi: '१. मुख्य समस्या (HPI)', icon: Stethoscope },
+            { id: 'ai_inquiries', labelEn: '2. Nidan AI™ Inquiries', labelHi: '२. निदान AI™ पूछताछ', icon: Sparkles },
+            { id: 'past_history', labelEn: '3. Past History & Allergies', labelHi: '३. पुराना इतिहास व एलर्जी', icon: History },
+            { id: 'current_meds', labelEn: '4. Medication History', labelHi: '४. दवा इतिहास', icon: Pill }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeIntakeTab === tab.id;
@@ -541,11 +563,175 @@ export default function ConversationalIntakeStep({
                   >
                     {currentLang === 'hi' ? 'अगला' : 'Next'}
                   </Button>
+                  <Button
+                    onClick={() => setActiveIntakeTab('ai_inquiries')}
+                    className="bg-[#0B4C8C] hover:bg-[#072d54] text-white rounded-lg h-8 px-3 text-xs font-black shadow-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles size={12} />
+                    <span>{currentLang === 'hi' ? 'निदान AI™ प्रश्न →' : 'Nidan AI™ Inquiries →'}</span>
+                  </Button>
                 </div>
               </div>
             </div>
           )}
         </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: NIDAN AI CLINICAL INQUIRIES (AUTOMATICALLY GENERATED ON COMPLAINT) */}
+      {/* ========================================================================= */}
+      {activeIntakeTab === 'ai_inquiries' && (
+        <NidanAiCard
+          badge="Nidan AI™"
+          title={currentLang === 'hi' ? 'निदान AI™ नैदानिक पूछताछ (Targeted Clinical Inquiries)' : 'Nidan AI™ Targeted Clinical Inquiries'}
+          subtitle={currentLang === 'hi' ? 'मुख्य समस्या आधारित गहन पूछताछ — आपके उत्तर सीधे डॉक्टर के ओपीडी स्क्रीन पर दिखाई देंगे।' : 'Diagnostic inquiries tailored to your complaint. Responses appear directly on the doctor’s workstation.'}
+          innerClassName="p-6 sm:p-8 space-y-6"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-indigo-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-gradient-to-r from-indigo-600 to-[#0B4C8C] text-white border-0 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg">
+                  <Sparkles size={12} className="mr-1 inline" />
+                  Nidan AI™ Clinical Pre-Consultation
+                </Badge>
+                <span className="text-xs font-bold text-indigo-700">
+                  {currentLang === 'hi' ? 'चिकित्सक परामर्श हेतु विशेष प्रश्न' : 'Targeted Questions for Physician'}
+                </span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-[#16213A] mt-1" style={{ fontFamily: "'Fraunces', serif" }}>
+                {currentLang === 'hi' ? 'निदान AI™ नैदानिक पूछताछ (Clinical Inquiries)' : 'Targeted Clinical Inquiries'}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#5B677E] font-medium mt-0.5">
+                {currentLang === 'hi'
+                  ? 'आपकी मुख्य समस्या के आधार पर निदान AI™ द्वारा उत्पन्न प्रश्न। आपके उत्तर सीधे डॉक्टर के ओपीडी स्क्रीन पर दिखाई देंगे।'
+                  : 'Diagnostic inquiries tailored to your complaint. Your responses will appear directly on the doctor’s workstation.'}
+              </p>
+            </div>
+
+            <Badge className="bg-indigo-50 text-indigo-900 border-2 border-indigo-200 text-xs font-black px-3.5 py-1.5 rounded-xl self-start sm:self-auto">
+              {Object.keys(aiInquiriesResponse).length} / {kioskAiInquiries.length || 3} {currentLang === 'hi' ? 'उत्तर दिए गए' : 'Answered'}
+            </Badge>
+          </div>
+
+          {isLoadingAiInquiries ? (
+            <div className="py-12 text-center space-y-3">
+              <div className="w-10 h-10 border-3 border-[#0B4C8C] border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-xs font-bold text-[#5B677E]">
+                {currentLang === 'hi' ? 'एआई नैदानिक प्रश्न तैयार किए जा रहे हैं...' : 'Generating tailored clinical inquiries...'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {(kioskAiInquiries.length > 0 ? kioskAiInquiries : [
+                {
+                  id: 'inq_1',
+                  questionHi: 'क्या भोजन करने के 2-3 घंटे बाद सीने या पेट में खट्टी जलन (परिणामशूल) बढ़ जाती है?',
+                  questionEn: 'Does sour burning in chest or stomach worsen 2-3 hours after meals (Parinama Shula)?',
+                  optionsHi: ['हाँ, भोजन के 2-3 घंटे बाद तेज जलन होती है', 'कभी-कभी हल्का महसूस होता है', 'नहीं, ऐसा नहीं होता'],
+                  optionsEn: ['Yes, severe post-meal burning', 'Occasionally mild', 'No, not at all'],
+                  clinicalReason: 'Differentiates Pachakagni Vidaha from Koshtha Vata'
+                },
+                {
+                  id: 'inq_2',
+                  questionHi: 'क्या प्रातःकाल सोकर उठने पर मुँह का स्वाद कड़वा (तिक्त) अथवा खट्टा (अम्ल) रहता है?',
+                  questionEn: 'Is your mouth taste bitter or sour upon waking up in the morning?',
+                  optionsHi: ['हाँ, कड़वा व खट्टा स्वाद रहता है', 'मुँह सूखा या फीका रहता है', 'सामान्य रहता है'],
+                  optionsEn: ['Yes, bitter or sour taste', 'Dry or tasteless', 'Normal mouth taste'],
+                  clinicalReason: 'Identifies Pitta-dominant vs Kapha-dominant Amlapitta'
+                },
+                {
+                  id: 'inq_3',
+                  questionHi: 'क्या रात को देर से भोजन करने अथवा अत्यधिक मिर्च, खटाई या तली हुई चीजें खाने का अभ्यास है?',
+                  questionEn: 'Do you frequently have late-night dinners or consume spicy, sour, fried food?',
+                  optionsHi: ['हाँ, अक्सर देर रात भोजन व मसालेदार खाना होता है', 'सप्ताह में 1-2 बार कभी-कभार', 'नहीं, सादा व समय पर भोजन लेता हूँ'],
+                  optionsEn: ['Yes, regular late meals & spicy foods', '1-2 times a week', 'No, simple diet on time'],
+                  clinicalReason: 'Pinpoints primary dietary Hetu (Vidahi & Guru Ahara)'
+                }
+              ]).map((inq, idx) => {
+                const recordedAnswer = aiInquiriesResponse[inq.id]?.answer;
+                const opts = currentLang === 'hi' ? inq.optionsHi : inq.optionsEn;
+
+                return (
+                  <div key={inq.id} className="p-5 rounded-2xl bg-slate-50/70 border-2 border-[#DCE3EC] space-y-3 hover:border-indigo-300 transition-all">
+                    <div className="flex items-start gap-3">
+                      <span className="w-7 h-7 rounded-xl bg-[#0B4C8C] text-white text-xs font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <h4 className="text-sm sm:text-base font-black text-[#16213A] leading-snug">
+                          {currentLang === 'hi' ? inq.questionHi : inq.questionEn}
+                        </h4>
+                        <p className="text-xs text-[#5B677E] italic mt-0.5">
+                          {currentLang === 'hi' ? inq.questionEn : inq.questionHi}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 pl-10">
+                      {opts?.map((opt) => {
+                        const isChosen = recordedAnswer === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => {
+                              const updated = {
+                                ...aiInquiriesResponse,
+                                [inq.id]: {
+                                  questionHi: inq.questionHi,
+                                  questionEn: inq.questionEn,
+                                  answer: opt,
+                                  clinicalReason: inq.clinicalReason
+                                }
+                              };
+                              setAiInquiriesResponse(updated);
+                              setIntakeData(prev => ({
+                                ...prev,
+                                aiInquiriesResponse: updated
+                              }));
+                              voiceAssistant.playAudioCue('beep');
+                              if (voiceEnabled) {
+                                voiceAssistant.speak(opt);
+                              }
+                            }}
+                            className={`p-3.5 rounded-xl text-left text-xs font-bold border-2 transition-all cursor-pointer flex items-center justify-between ${
+                              isChosen
+                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm font-black'
+                                : 'bg-white hover:bg-indigo-50/60 text-[#16213A] border-[#DCE3EC]'
+                            }`}
+                          >
+                            <span>{opt}</span>
+                            {isChosen && <CheckCircle2 size={16} className="text-white shrink-0 ml-1.5" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Action Button to Next Tab */}
+              <div className="flex items-center justify-between pt-4 border-t border-[#DCE3EC]">
+                <button
+                  type="button"
+                  onClick={() => setActiveIntakeTab('hpi')}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  ← {currentLang === 'hi' ? 'मुख्य समस्या पर लौटें' : 'Back to HPI'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveIntakeTab('past_history')}
+                  className="px-6 py-2.5 rounded-xl bg-[#0B4C8C] hover:bg-[#072d54] text-white text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <span>{currentLang === 'hi' ? 'आगे बढ़ें: पुराना इतिहास व एलर्जी →' : 'Proceed to Past History →'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+        </NidanAiCard>
       )}
 
       {/* ========================================================================= */}

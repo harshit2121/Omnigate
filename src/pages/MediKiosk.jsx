@@ -310,6 +310,7 @@ export default function MediKiosk() {
           currentLang={currentLang}
           voiceEnabled={voiceEnabled}
           patientData={patientData}
+          intakeData={intakeData}
         />
       )}
 

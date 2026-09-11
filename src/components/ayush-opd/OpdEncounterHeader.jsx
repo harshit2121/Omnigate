@@ -121,15 +121,14 @@ export default function OpdEncounterHeader({
         </button>
       </div>
 
-      {/* HIS SECTION NAVIGATION TABS */}
+      {/* HIS SECTION NAVIGATION TABS - MODERN SOAP CLINICAL ARCHITECTURE */}
       <div style={{ display: 'flex', borderBottom: '2px solid #003F6B', background: 'white', borderTop: '1px solid #CBD5E1' }}>
         {[
-          { id: 'samprapti_chart', label: '1. Samprapti Matrix', sub: 'संप्राप्ति' },
-          { id: 'clinical_history', label: '2. Pariksha & HPI', sub: 'रोग परीक्षा' },
-          { id: 'medication_history', label: '3. Medication Hx', sub: 'दवा इतिहास' },
-          { id: 'prescription_cdss', label: '4. E-Prescribing', sub: 'ई-प्रिस्क्रिप्शन' },
-          { id: 'patient_summary', label: '5. Patient Summary', sub: 'परामर्श पत्र' },
-          { id: 'emr_sheet', label: '6. Case Sheet', sub: 'EMR शीट' }
+          { id: 'soap_subjective', label: '1. [S] Subjective', sub: 'रोगी वृत्तान्त (HPI & Intake)' },
+          { id: 'soap_objective', label: '2. [O] Objective', sub: 'परीक्षा व प्रकृति (Vitals, Ashtavidha & CCRAS)' },
+          { id: 'soap_assessment', label: '3. [A] Assessment', sub: 'सम्प्राप्ति एवं निदान (Diagnosis & Codes)' },
+          { id: 'soap_plan', label: '4. [P] Plan & Rx', sub: 'चिकित्सा व प्रिस्क्रिप्शन (Treatment & Diet)' },
+          { id: 'patient_summary', label: '5. [Summary] E-Sign', sub: 'परामर्श पत्र (Official Record)' }
         ].map((tab, idx) => {
           const isActive = hisActiveTab === tab.id;
           return (
@@ -138,10 +137,10 @@ export default function OpdEncounterHeader({
               onClick={() => setHisActiveTab(tab.id)}
               style={{
                 flex: 1,
-                padding: '9px 8px',
+                padding: '10px 8px',
                 cursor: 'pointer',
                 border: 'none',
-                borderRight: idx < 5 ? '1px solid #CBD5E1' : 'none',
+                borderRight: idx < 4 ? '1px solid #CBD5E1' : 'none',
                 borderBottom: isActive ? '3px solid #FF6B00' : '3px solid transparent',
                 background: isActive ? '#003F6B' : '#F1F5F9',
                 color: isActive ? 'white' : '#334155',
@@ -151,8 +150,8 @@ export default function OpdEncounterHeader({
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#E2E8F0'; }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#F1F5F9'; }}
             >
-              <div style={{ fontWeight: 'bold', fontSize: '11px', letterSpacing: '0.2px' }}>{tab.label}</div>
-              <div style={{ fontSize: '10px', opacity: isActive ? 0.9 : 0.75, marginTop: '2px' }}>{tab.sub}</div>
+              <div style={{ fontWeight: 'bold', fontSize: '12px', letterSpacing: '0.2px' }}>{tab.label}</div>
+              <div style={{ fontSize: '10px', opacity: isActive ? 0.95 : 0.75, marginTop: '2px', fontWeight: isActive ? '600' : 'normal' }}>{tab.sub}</div>
             </button>
           );
         })}

@@ -8,17 +8,17 @@ import { ayushFormulationsApi, AYUSH_FORMULATIONS_DATA } from '../services/ayush
 import MedicationHistory from '../components/dashboard/Patient/MedicationHistory';
 import { logAuditEvent } from '../services/auditLog';
 import { runDashavidhaEvaluation } from '../services/dashavidhaParikshaEngine';
-import { synthesizeSamprapti } from '../services/sampraptiSynthesizerService';
+import { calculateCcrasPrakriti } from '../services/prakritiDetermineService';
 import voiceAssistant from '../services/voiceAssistant';
 
-// Modular AYUSH OPD Subcomponents
+// Modular AYUSH OPD Subcomponents (SOAP Clinical Architecture)
 import OpdQueueRoster from '../components/ayush-opd/OpdQueueRoster';
 import OpdEncounterHeader from '../components/ayush-opd/OpdEncounterHeader';
-import OpdSampraptiTab from '../components/ayush-opd/tabs/OpdSampraptiTab';
-import OpdClinicalHistoryTab from '../components/ayush-opd/tabs/OpdClinicalHistoryTab';
-import OpdPrescriptionTab from '../components/ayush-opd/tabs/OpdPrescriptionTab';
+import OpdSubjectiveTab from '../components/ayush-opd/tabs/OpdSubjectiveTab';
+import OpdObjectiveTab from '../components/ayush-opd/tabs/OpdObjectiveTab';
+import OpdAssessmentTab from '../components/ayush-opd/tabs/OpdAssessmentTab';
+import OpdPlanTab from '../components/ayush-opd/tabs/OpdPlanTab';
 import OpdPatientSummaryTab from '../components/ayush-opd/tabs/OpdPatientSummaryTab';
-import OpdEmrCaseSheetTab from '../components/ayush-opd/tabs/OpdEmrCaseSheetTab';
 
 // Modular AYUSH OPD Modals
 import OpdVitalsModal from '../components/ayush-opd/modals/OpdVitalsModal';
@@ -41,11 +41,15 @@ export default function AyushPhysicianOPD() {
   // Two-view navigation: 'roster' → full-screen queue, 'encounter' → clinical workstation
   const [currentView, setCurrentView] = useState('roster');
 
-  // Hospital HIS Workbench Navigation Tabs
-  const [hisActiveTab, setHisActiveTab] = useState('samprapti_chart'); 
+  // Hospital HIS Workbench Navigation Tabs - SOAP Clinical Flow
+  const [hisActiveTab, setHisActiveTab] = useState('soap_subjective'); 
 
-  // Vaidya Overrides on Samprapti Synthesis
-  const [vaidyaOverrides, setVaidyaOverrides] = useState({});
+  // Doctor SOAP Clinical Notes & Overrides
+  const [doctorSubjectiveNotes, setDoctorSubjectiveNotes] = useState('');
+  const [doctorAssessmentNotes, setDoctorAssessmentNotes] = useState('');
+  const [patientPrakritiAnswers, setPatientPrakritiAnswers] = useState({});
+  const [confirmedDiagnosis, setConfirmedDiagnosis] = useState(null);
+  const [activeGhatakas, setActiveGhatakas] = useState(null);
 
   // API Formulation Importer Modal State
   const [showApiImportModal, setShowApiImportModal] = useState(false);
@@ -195,57 +199,16 @@ export default function AyushPhysicianOPD() {
     }
   };
 
-  // Evaluate Live Layer 3 Samprapti Synthesis
-  const sampraptiSynthesis = useMemo(() => {
+  // Evaluate Live CCRAS Standardized Prakriti Scale
+  const ccrasPrakritiResult = useMemo(() => {
     if (!selectedCase) return null;
-
-    const dashavidhaResult = runDashavidhaEvaluation({
-      prakritiAnswers: selectedCase.pariksha?.prakritiAnswers || {},
-      vikritiAnswers: selectedCase.pariksha?.vikritiAnswers || {},
-      saraAnswers: selectedCase.pariksha?.saraAnswers || {},
-      samhanana: selectedCase.pariksha?.samhanana || 'Madhyama',
-      pramanaData: {
-        heightCm: 168,
-        weightKg: 65,
-        waistCm: 80,
-        hipCm: 95,
-        gender: selectedCase.patient?.gender || 'female'
-      },
-      satmya: selectedCase.pariksha?.satmya || 'Madhyama',
-      sattva: selectedCase.pariksha?.sattva || 'Madhyama',
-      aharaInputs: {
-        intake: 'moderate',
-        jaranaTimeHours: selectedCase.pariksha?.agni?.toLowerCase().includes('tikshna') ? 2.5 : 4,
-        postMealFeeling: selectedCase.pariksha?.agni?.toLowerCase().includes('tikshna') ? 'burning_hunger' : 'normal'
-      },
-      vyayamaShakti: selectedCase.pariksha?.vyayamaShakti?.grade || 'Madhyama',
-      age: selectedCase.patient?.age || 45
-    });
-
-    const baseSynthesis = synthesizeSamprapti({
-      dashavidhaResult,
-      complaintId: selectedCase.intake?.complaintId || 'digestive_issues',
-      complaintLabel: selectedCase.intake?.complaintLabel || 'Amlapitta',
-      symptomsText: selectedCase.intake?.answers?.site || '',
-      answers: selectedCase.intake?.answers || {},
-      namasteCode: selectedCase.intake?.namasteCode || 'NAMASTE-AYU-AML-01',
-      patientName: selectedCase.patient?.name || 'Patient'
-    });
-
-    if (vaidyaOverrides[selectedCase.id]) {
-      const overrides = vaidyaOverrides[selectedCase.id];
-      return {
-        ...baseSynthesis,
-        ghatakas: {
-          ...baseSynthesis.ghatakas,
-          ...overrides
-        },
-        isOverriddenByVaidya: true
-      };
-    }
-
-    return baseSynthesis;
-  }, [selectedCase, vaidyaOverrides]);
+    const baseAnswers = {
+      ...(selectedCase.pariksha?.ccrasAnswers || {}),
+      ...(selectedCase.pariksha?.prakritiAnswers || {}),
+      ...patientPrakritiAnswers
+    };
+    return calculateCcrasPrakriti(baseAnswers);
+  }, [selectedCase, patientPrakritiAnswers]);
 
   // Evaluate Live CDSS for Selected Case
   const cdssEvaluation = useMemo(() => {
@@ -331,6 +294,55 @@ export default function AyushPhysicianOPD() {
         }
       }
     }));
+    setActiveGhatakas(prev => ({
+      ...(prev || {}),
+      [ghatakaKey]: newValue
+    }));
+  };
+
+  const handleConfirmDoctorPrakriti = (confirmedResult) => {
+    if (!selectedCase) return;
+    const updatedCase = {
+      ...selectedCase,
+      pariksha: {
+        ...selectedCase.pariksha,
+        doctorConfirmedPrakriti: confirmedResult,
+        prakritiResult: confirmedResult.ccrasResult || confirmedResult,
+        prakritiStatus: confirmedResult.isModified ? 'DOCTOR_MODIFIED' : 'DOCTOR_CONFIRMED',
+        confirmedBy: confirmedResult.confirmedBy || 'Dr. V. Sharma (BAMS, MD Ayu)',
+        confirmedAt: confirmedResult.confirmedAt || new Date().toISOString()
+      }
+    };
+    setSelectedCase(updatedCase);
+    setQueue(prev => {
+      const next = prev.map(c => c.id === selectedCase.id ? updatedCase : c);
+      try {
+        localStorage.setItem('omni_kiosk_queue', JSON.stringify(next));
+        localStorage.setItem('omni_active_opd_case', JSON.stringify(updatedCase));
+      } catch (e) {
+        console.error('Failed saving confirmed prakriti case:', e);
+      }
+      return next;
+    });
+  };
+
+  const handleAddAiPrescriptions = (suggestedMeds) => {
+    if (!Array.isArray(suggestedMeds) || suggestedMeds.length === 0) return;
+    const newItems = suggestedMeds.map((med, idx) => ({
+      id: Date.now() + idx,
+      name: med.name,
+      type: med.kalpana || 'Vati',
+      system: 'ayurvedic',
+      dose: med.dose || '250mg',
+      frequency: med.frequency || 'BD (Twice Daily)',
+      kaala: med.kaala || 'Adhobhakta (After Meals)',
+      anupana: med.anupana || 'Lukewarm Water',
+      duration: med.duration || '15 Days',
+      source: 'AI Clinical Copilot'
+    }));
+    setPrescriptions(prev => [...prev, ...newItems]);
+    voiceAssistant.playAudioCue('beep');
+    alert(`✓ ${newItems.length} शास्त्रीय योग (Classical Formulations) प्रिस्क्रिप्शन में सफलतापूर्वक जोड़ दिए गए हैं!`);
   };
 
   const handleAddPrescription = () => {
@@ -542,6 +554,23 @@ export default function AyushPhysicianOPD() {
     voiceAssistant.playAudioCue('success');
   };
 
+  const handleConfirmDoctorDiagnosis = (confirmed, ghatakas) => {
+    setConfirmedDiagnosis(confirmed);
+    if (ghatakas) setActiveGhatakas(ghatakas);
+    if (selectedCase) {
+      const updatedCase = {
+        ...selectedCase,
+        assessment: {
+          ...(selectedCase.assessment || {}),
+          confirmedDiagnosis: confirmed,
+          ghatakas: ghatakas || selectedCase.assessment?.ghatakas
+        }
+      };
+      setSelectedCase(updatedCase);
+      setQueue(prev => prev.map(item => item.id === selectedCase.id ? updatedCase : item));
+    }
+  };
+
   const handleAddPanchakarmaOrder = () => {
     if (!newPanchakarmaForm.procedure) return;
     const newEntry = {
@@ -622,7 +651,23 @@ export default function AyushPhysicianOPD() {
   const generatePhysicianSummaryText = (c) => {
     if (!c) return '';
     const catalogItem = AYUSH_NAMASTE_CATALOG[c.intake?.complaintId] || AYUSH_NAMASTE_CATALOG.digestive_issues;
-    const sGhatakas = sampraptiSynthesis?.ghatakas || {};
+    const prak = ccrasPrakritiResult || {
+      dominantPrakriti: c.pariksha?.prakritiResult?.dominant || 'Pitta-Vata Dwandvaja',
+      dominantPrakritiHi: 'पित्त-वात द्वन्द्वज प्रकृति',
+      percentages: { vata: 35, pitta: 55, kapha: 10 },
+      marks: { vata: 8, pitta: 12, kapha: 2, total: 22 },
+      domainScores: {
+        physical: { vata: 2, pitta: 3, kapha: 1, total: 6 },
+        physiological: { vata: 2, pitta: 4, kapha: 1, total: 7 },
+        psychological: { vata: 2, pitta: 3, kapha: 0, total: 5 },
+        behavioral: { vata: 2, pitta: 2, kapha: 0, total: 4 }
+      },
+      guidelines: {
+        dietaryRulesHi: 'स्निग्ध, सुपाच्य, मृदु और गैर-मसालेदार भोजन।',
+        viharaLifestyleHi: 'भोजन और सोने का समय बिल्कुल नियमित रखें।',
+        yogaAsanas: 'Nadi Shodhana, Sheetali, Shavasana'
+      }
+    };
 
     return `ALL INDIA INSTITUTE OF AYURVEDA (AIIA) - CENTRAL HOSPITAL INFORMATION SYSTEM
 CLINICAL OPD CONSULTATION RECORD (DEPARTMENT OF KAYA CHIKITSA)
@@ -644,26 +689,22 @@ CR No: ${c.crNo} | UHID: ${c.uhid || 'UHID-2026-89421'} | Token: ${c.token} | Da
 - Pain Severity Score: ${c.vitals?.painScale || 'VAS 6/10'}
 
 3. AYURVEDIC CLINICAL EXAMINATION (ROGI-ROGA PARIKSHA):
-- Inherent Prakriti (L1): ${c.pariksha?.prakritiResult?.dominant || 'N/A'} (V: ${c.pariksha?.prakritiResult?.vataPct || 35}%, P: ${c.pariksha?.prakritiResult?.pittaPct || 55}%, K: ${c.pariksha?.prakritiResult?.kaphaPct || 10}%)
-- Current Pathological Vikriti (L2): ${c.pariksha?.vikritiResult?.dominant || 'Pittaja Vikriti'} (Δ Pitta: +${c.pariksha?.vikritiResult?.delta?.pitta || 10}%)
 - Ashtavidha Pariksha: Nadi (${c.pariksha?.ashtavidha?.nadi}), Jihwa (${c.pariksha?.ashtavidha?.jihwa}), Mala (${c.pariksha?.ashtavidha?.mala})
 - Agni & Koshtha: ${c.pariksha?.agni || 'Tikshnagni'} | ${c.pariksha?.koshtha || 'Krura Koshtha'}
 - Pramana (Anthropometrics): Height ${c.vitals?.height} | Weight ${c.vitals?.weight} | BMI ${c.vitals?.bmi}
 
-4. SAMPRAPTI GHATAKA CLINICAL CHART (CHARAKA-SUSHRUTA TRISUTRA):
-- Hetu (निदान): ${sGhatakas.hetu?.value || 'Mithya Ahara-Vihara'}
-- Dosha (दोष): ${sGhatakas.dosha?.value || 'Pitta Pradhana'} (Gati: ${sGhatakas.dosha?.doshagati || 'Urdhwagati'})
-- Dushya (दूष्य): ${sGhatakas.dushya?.value || 'Rasa, Rakta Dhatu'}
-- Srotas (स्रोतस): ${sGhatakas.srotas?.value || 'Annavaha, Rasavaha Srotas'}
-- Srotodushti (स्रोतोदुष्टि प्रकार): ${sGhatakas.srotodushti?.value || 'Vimargagamana'}
-- Agni & Ama (अग्नि व आम): ${sGhatakas.agni?.value || 'Tikshnagni (Sama)'}
-- Udbhavasthana (उद्भवस्थान): ${sGhatakas.udbhavasthana?.value || 'Amashaya (Stomach)'}
-- Sancharasthana (संचारस्थान): ${sGhatakas.sancharasthana?.value || 'Dhamanis'}
-- Sthanasamsraya (स्थानसंश्रय): ${sGhatakas.sthanaSamsraya?.value || 'Amashaya'}
-- Vyaktasthana (व्यक्तस्थान): ${sGhatakas.vyaktasthana?.value || 'Epigastrium'}
-- Rogamarga (रोगमार्ग): ${sGhatakas.rogamarga?.value || 'Abhyantara Rogamarga'}
-- Sadhyasadhyata (साध्यासाध्यता): ${sGhatakas.sadhyasadhyata?.value || 'Sukhasadhya'}
-- Chikitsa Sutra (चिकित्सा सूत्र): ${sGhatakas.chikitsaSutra?.value || 'Virechana & Pittashamaka'}
+4. CCRAS STANDARDIZED PRAKRITI ASSESSMENT (CENTRAL COUNCIL FOR RESEARCH IN AYURVEDIC SCIENCES):
+- Official Standard: CCRAS Standard Operative Procedures Manual (ISBN: 978-93-83864-21-8)
+- Constitutional Diagnosis: ${prak.dominantPrakriti} (${prak.dominantPrakritiHi})
+- Tri-Dosha Proportion: Vata ${prak.percentages?.vata}% (${prak.marks?.vata} pts) | Pitta ${prak.percentages?.pitta}% (${prak.marks?.pitta} pts) | Kapha ${prak.percentages?.kapha}% (${prak.marks?.kapha} pts)
+- Trait Domain Breakdown:
+  * Physical Traits (Built, Height, Appearance, Skin, Hair, Eyes): V:${prak.domainScores?.physical?.vata} | P:${prak.domainScores?.physical?.pitta} | K:${prak.domainScores?.physical?.kapha}
+  * Physiological Traits (Appetite, Thirst, Bowel, Sleep, Sweating, Weather, Stamina): V:${prak.domainScores?.physiological?.vata} | P:${prak.domainScores?.physiological?.pitta} | K:${prak.domainScores?.physiological?.kapha}
+  * Psychological Traits (Indecisiveness, Comprehension, Memory, Anger, Stability): V:${prak.domainScores?.psychological?.vata} | P:${prak.domainScores?.psychological?.pitta} | K:${prak.domainScores?.psychological?.kapha}
+  * Behavioral Traits (Enmity, Humility, Speech, Gait, Friendship): V:${prak.domainScores?.behavioral?.vata} | P:${prak.domainScores?.behavioral?.pitta} | K:${prak.domainScores?.behavioral?.kapha}
+- CCRAS Pathya Ahara: ${prak.guidelines?.dietaryRulesHi || 'Warm, freshly cooked, balanced diet'}
+- CCRAS Vihara: ${prak.guidelines?.viharaLifestyleHi || 'Regular sleep schedule, daily exercise'}
+- Prescribed Yoga & Pranayama: ${prak.guidelines?.yogaAsanas || 'Surya Namaskar & Pranayama'}
 
 5. E-PRESCRIPTION & DISPENSARY ORDERS:
 ${prescriptions.map((p, i) => `${i + 1}. ${p.name} - Dose: ${p.dose} | Freq: ${p.frequency} | Kaala: ${p.kaala} | Anupana: ${p.anupana} | Duration: ${p.duration}`).join('\n')}
@@ -690,6 +731,11 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
     setSearchQuery(c.token);
     setEditedNotes('');
     setCurrentView('encounter');
+    setPatientPrakritiAnswers(c.pariksha?.ccrasAnswers || c.pariksha?.prakritiAnswers || {});
+    setConfirmedDiagnosis(c.assessment?.confirmedDiagnosis || null);
+    setActiveGhatakas(c.assessment?.ghatakas || null);
+    setDoctorSubjectiveNotes(c.notes?.subjective || '');
+    setDoctorAssessmentNotes(c.notes?.assessment || '');
 
     setQueue(prev => {
       const next = prev.map(item => {
@@ -797,64 +843,62 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
             setHisActiveTab={setHisActiveTab}
           />
 
-          {/* TAB 1: SAMPRAPTI GHATAKA MATRIX */}
-          {hisActiveTab === 'samprapti_chart' && sampraptiSynthesis && (
-            <OpdSampraptiTab
+          {/* TAB 1: [S] SUBJECTIVE (लक्षण, इतिहास एवं आहार-विहार) */}
+          {hisActiveTab === 'soap_subjective' && (
+            <OpdSubjectiveTab
               selectedCase={selectedCase}
-              sampraptiSynthesis={sampraptiSynthesis}
-              handleOverrideGhataka={handleOverrideGhataka}
+              doctorNotes={doctorSubjectiveNotes}
+              onUpdateDoctorNotes={setDoctorSubjectiveNotes}
             />
           )}
 
-          {/* TAB 2: ROGI PARIKSHA & CLINICAL HISTORY */}
-          {hisActiveTab === 'clinical_history' && (
-            <OpdClinicalHistoryTab
+          {/* TAB 2: [O] OBJECTIVE (परीक्षा, अष्टविध एवं CCRAS प्रकृति) */}
+          {hisActiveTab === 'soap_objective' && (
+            <OpdObjectiveTab
               selectedCase={selectedCase}
+              patientPrakritiAnswers={patientPrakritiAnswers}
+              onUpdatePrakritiAnswers={setPatientPrakritiAnswers}
+              onConfirmDoctorPrakriti={handleConfirmDoctorPrakriti}
+              handleOpenVitalsModal={handleOpenVitalsModal}
             />
           )}
 
-          {/* TAB 3: MEDICATION HISTORY */}
-          {hisActiveTab === 'medication_history' && (
-            <MedicationHistory
-              currentMedications={patientCurrentMeds.length > 0 ? patientCurrentMeds : (selectedCase.intake?.currentMedications || [])}
-              previousMedications={patientPreviousMeds.length > 0 ? patientPreviousMeds : (selectedCase.intake?.previousMedications || [])}
-              onUpdateCurrentMeds={(updated) => {
-                setPatientCurrentMeds(updated);
-                if (selectedCase) {
-                  selectedCase.intake = { ...selectedCase.intake, currentMedications: updated };
-                }
-              }}
-              onUpdatePrevMeds={(updated) => {
-                setPatientPreviousMeds(updated);
-                if (selectedCase) {
-                  selectedCase.intake = { ...selectedCase.intake, previousMedications: updated };
-                }
-              }}
-              onReconcileToRx={handleReconcileToRx}
-              isPhysicianMode={true}
+          {/* TAB 3: [A] ASSESSMENT (सम्प्राप्ति घटक, निदान एवं NAMASTE/ICD-11) */}
+          {hisActiveTab === 'soap_assessment' && (
+            <OpdAssessmentTab
+              selectedCase={selectedCase}
+              assessmentNotes={doctorAssessmentNotes}
+              onUpdateAssessmentNotes={setDoctorAssessmentNotes}
+              doctorSubjectiveNotes={doctorSubjectiveNotes}
+              ccrasPrakritiResult={ccrasPrakritiResult}
+              confirmedDiagnosis={confirmedDiagnosis}
+              setConfirmedDiagnosis={setConfirmedDiagnosis}
+              activeGhatakas={activeGhatakas}
+              setActiveGhatakas={setActiveGhatakas}
+              onConfirmDoctorDiagnosis={handleConfirmDoctorDiagnosis}
+              onOverrideGhataka={handleOverrideGhataka}
             />
           )}
 
-          {/* TAB 4: E-PRESCRIBING SUITE */}
-          {hisActiveTab === 'prescription_cdss' && (
-            <OpdPrescriptionTab
+          {/* TAB 4: [P] PLAN & RX (चिकित्सा सूत्र, औषध योग एवं पथ्यापथ्य) */}
+          {hisActiveTab === 'soap_plan' && (
+            <OpdPlanTab
               selectedCase={selectedCase}
+              confirmedDiagnosis={confirmedDiagnosis}
+              activeGhatakas={activeGhatakas}
+              doctorSubjectiveNotes={doctorSubjectiveNotes}
+              doctorAssessmentNotes={doctorAssessmentNotes}
+              ccrasPrakritiResult={ccrasPrakritiResult}
               isPrescriptionSigned={isPrescriptionSigned}
               cdssEvaluation={cdssEvaluation}
               prescriptions={prescriptions}
-              prescribeMode={prescribeMode}
-              setPrescribeMode={setPrescribeMode}
-              regimenSearchQuery={regimenSearchQuery}
-              setRegimenSearchQuery={setRegimenSearchQuery}
-              activeRegimenName={activeRegimenName}
-              handleApplyOrderSet={handleApplyOrderSet}
-              handleApplyAyurGenixDisease={handleApplyAyurGenixDisease}
-              prescribingSystem={prescribingSystem}
-              setPrescribingSystem={setPrescribingSystem}
-              newMedForm={newMedForm}
-              setNewMedForm={setNewMedForm}
+              setPrescriptions={setPrescriptions}
               handleAddPrescription={handleAddPrescription}
               handleRemovePrescription={handleRemovePrescription}
+              newMedForm={newMedForm}
+              setNewMedForm={setNewMedForm}
+              prescribingSystem={prescribingSystem}
+              setPrescribingSystem={setPrescribingSystem}
               dietPathya={dietPathya}
               setDietPathya={setDietPathya}
               dietApathya={dietApathya}
@@ -866,18 +910,19 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
               setShowPanchakarmaModal={setShowPanchakarmaModal}
               setShowConfirmRxModal={setShowConfirmRxModal}
               setShowApiImportModal={setShowApiImportModal}
-              handleSearchApiFormulations={handleSearchApiFormulations}
               printDoctorPrescription={printDoctorPrescription}
             />
           )}
 
-          {/* TAB 5: PATIENT CONSULTATION SUMMARY */}
+          {/* TAB 5: [SUMMARY & E-SIGN] (रोगी परामर्श पत्र एवं अधिकृत प्रिंट) */}
           {hisActiveTab === 'patient_summary' && (
             <OpdPatientSummaryTab
               selectedCase={selectedCase}
+              confirmedDiagnosis={confirmedDiagnosis}
+              activeGhatakas={activeGhatakas}
               isPrescriptionSigned={isPrescriptionSigned}
               acceptedCases={acceptedCases}
-              sampraptiSynthesis={sampraptiSynthesis}
+              ccrasPrakritiResult={ccrasPrakritiResult}
               prescriptions={prescriptions}
               dietPathya={dietPathya}
               yogaPlanText={yogaPlanText}
@@ -886,16 +931,6 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
               prescriptionHash={prescriptionHash}
               backToRoster={backToRoster}
               printDoctorPrescription={printDoctorPrescription}
-            />
-          )}
-
-          {/* TAB 6: AIIA EMR CLINICAL CASE SHEET */}
-          {hisActiveTab === 'emr_sheet' && (
-            <OpdEmrCaseSheetTab
-              isEditing={isEditing}
-              setIsEditing={setIsEditing}
-              activeSummaryText={activeSummaryText}
-              setEditedNotes={setEditedNotes}
             />
           )}
 
