@@ -124,7 +124,7 @@ function PanchakaItemManager({
         <div className="pt-1 border-t border-slate-200/60">
           <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             <Sparkles size={10} className="text-amber-500" />
-            <span>Nidan AI सुझाव (+ Click to Add):</span>
+            <span>NIDAAN AI सुझाव (+ Click to Add):</span>
           </div>
           <div className="flex flex-wrap gap-1">
             {availableSuggestions.slice(0, 4).map((sug, i) => (
@@ -391,10 +391,10 @@ export default function OpdRogaParikshaTab({
             onClick={handleAutoFillAllFromAi}
             disabled={!aiData}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-40"
-            title="Nidan AI से सम्पूर्ण शास्त्रीय निदान पंचक स्वतः भरें"
+            title="NIDAAN AI से सम्पूर्ण शास्त्रीय निदान पंचक स्वतः भरें"
           >
             <Sparkles size={13} className="text-amber-100" />
-            <span>✨ Nidan AI से स्वतः भरें</span>
+            <span>✨ NIDAAN AI से स्वतः भरें</span>
           </button>
 
           <button
@@ -410,7 +410,7 @@ export default function OpdRogaParikshaTab({
             onClick={fetchRogaAi}
             disabled={loadingAi}
             className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200 disabled:opacity-50"
-            title="Refresh Nidan AI Pathology Synthesis"
+            title="Refresh NIDAAN AI Pathology Synthesis"
           >
             <RefreshCw size={12} className={loadingAi ? 'animate-spin text-amber-600' : ''} />
             <span>{loadingAi ? 'विश्लेषण...' : 'पुनर्विश्लेषण'}</span>
@@ -593,8 +593,8 @@ export default function OpdRogaParikshaTab({
         {/* RIGHT 6 COLS: SAMPRAPTI GHATAKAS & NIDAN AI DIAGNOSTIC COPILOT */}
         <div className="lg:col-span-6 space-y-4">
           
-          {/* NIDAN AI: DIAGNOSTIC COPILOT CARD */}
-          <NidanAiCard title="Nidan AI: Rogi-Roga Synthesis & Diagnostic Differential">
+          {/* NIDAAN AI: DIAGNOSTIC COPILOT CARD */}
+          <NidanAiCard title="NIDAAN AI: Rogi-Roga Synthesis & Diagnostic Differential">
             <div className="space-y-3 text-xs">
               {/* Correlation rationale */}
               <div className="p-3 rounded-xl bg-indigo-50/60 border border-indigo-200/80 text-indigo-950 font-medium leading-relaxed">
@@ -623,7 +623,7 @@ export default function OpdRogaParikshaTab({
                       ) : (
                         <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] border border-amber-300 flex items-center gap-1">
                           <AlertCircle size={11} className="text-amber-700" />
-                          Nidan AI सुझाव (पुष्टि प्रतीक्षित)
+                          NIDAAN AI सुझाव (पुष्टि प्रतीक्षित)
                         </span>
                       )}
                     </div>

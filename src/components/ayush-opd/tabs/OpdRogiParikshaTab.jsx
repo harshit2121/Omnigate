@@ -193,7 +193,7 @@ export default function OpdRogiParikshaTab({
             title="Pre-populate probable findings based on chief complaint for quick physician review"
           >
             <Sparkles size={13} />
-            <span>Nidan AI सुझाव लागू करें</span>
+            <span>NIDAAN AI सुझाव लागू करें</span>
           </button>
         </div>
       </div>
@@ -281,15 +281,15 @@ export default function OpdRogiParikshaTab({
             />
           </div>
 
-          {/* Nidan AI Card: MediKiosk Clinical Inquiries & Patient Recorded Responses */}
+          {/* NIDAAN AI Card: MediKiosk Clinical Inquiries & Patient Recorded Responses */}
           <NidanAiCard 
-            title="Nidan AI: MediKiosk Clinical Inquiries & Patient Responses (कियोस्क पूछताछ एवं रोगी के उत्तर)"
+            title="NIDAAN AI: MediKiosk Clinical Inquiries & Patient Responses (कियोस्क पूछताछ एवं रोगी के उत्तर)"
             badge="MediKiosk Verified"
           >
             <div className="space-y-3 text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-2">
                 <p className="text-[11px] text-slate-600 font-medium">
-                  रोगी द्वारा मेडीकियोस्क पर मुख्य समस्या चयन के दौरान Nidan AI द्वारा पूछे गए प्रश्न एवं <b>रोगी द्वारा दर्ज उत्तर</b>:
+                  रोगी द्वारा मेडीकियोस्क पर मुख्य समस्या चयन के दौरान NIDAAN AI द्वारा पूछे गए प्रश्न एवं <b>रोगी द्वारा दर्ज उत्तर</b>:
                 </p>
                 <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 self-start sm:self-auto">
                   <CheckCircle2 size={11} className="text-emerald-700" />

@@ -202,7 +202,7 @@ export default function OpdChikitsaPlanTab({
       anupana: m.anupana || 'Lukewarm Water',
       duration: m.duration || '15 Days',
       purpose: m.purpose || m.rationale || 'Shamana Chikitsa',
-      source: 'Nidan AI Suggested Regimen'
+      source: 'NIDAAN AI Suggested Regimen'
     }));
     if (setPrescriptions) {
       setPrescriptions(formatted);
@@ -328,16 +328,16 @@ export default function OpdChikitsaPlanTab({
           </p>
         </div>
 
-        {/* Nidan AI Actions & Save to Cloud DB */}
+        {/* NIDAAN AI Actions & Save to Cloud DB */}
         <div className="flex items-center flex-wrap gap-2 shrink-0">
           <button
             onClick={handleAutoFillAllTiersFromAi}
             disabled={!aiPlanData || loadingAiPlan}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-40"
-            title="Nidan AI से चारों स्तरों की शास्त्रीय चिकित्सा योजना स्वतः भरें"
+            title="NIDAAN AI से चारों स्तरों की शास्त्रीय चिकित्सा योजना स्वतः भरें"
           >
             <Sparkles size={13} className="text-teal-100" />
-            <span>✨ Nidan AI से स्वतः भरें</span>
+            <span>✨ NIDAAN AI से स्वतः भरें</span>
           </button>
 
           <button
@@ -353,7 +353,7 @@ export default function OpdChikitsaPlanTab({
             onClick={fetchPlanAi}
             disabled={loadingAiPlan}
             className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200 disabled:opacity-50"
-            title="Refresh Nidan AI Treatment Synthesis"
+            title="Refresh NIDAAN AI Treatment Synthesis"
           >
             <RefreshCw size={12} className={loadingAiPlan ? 'animate-spin text-teal-600' : ''} />
             <span>{loadingAiPlan ? 'संश्लेषण...' : 'पुनर्विश्लेषण'}</span>
@@ -760,11 +760,11 @@ export default function OpdChikitsaPlanTab({
                   </div>
                   <p className="text-xs font-bold text-slate-700">अद्यावधि कोई शमन योग निर्धारित नहीं है (No formulations prescribed yet)</p>
                   <p className="text-[11px] text-slate-500">
-                    वैद्य स्वयं नीचे दिए गए फॉर्म या Formulary API से औषधियां जोड़ सकते हैं, या Nidan AI सुझाया गया प्रोटोकॉल 1-क्लिक में लागू कर सकते हैं।
+                    वैद्य स्वयं नीचे दिए गए फॉर्म या Formulary API से औषधियां जोड़ सकते हैं, या NIDAAN AI सुझाया गया प्रोटोकॉल 1-क्लिक में लागू कर सकते हैं।
                   </p>
                 </div>
 
-                {/* Nidan AI Suggested Regimen Card */}
+                {/* NIDAAN AI Suggested Regimen Card */}
                 {suggestedMeds.length > 0 && (
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-white to-teal-50/50 border border-indigo-200 shadow-2xs space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -774,7 +774,7 @@ export default function OpdChikitsaPlanTab({
                         </span>
                         <div>
                           <span className="text-[10px] uppercase font-black tracking-wider text-indigo-900 block">
-                            Nidan AI क्लिनिकल सुझाव (Suggested Regimen for Physician Review)
+                            NIDAAN AI क्लिनिकल सुझाव (Suggested Regimen for Physician Review)
                           </span>
                           <h4 className="text-xs font-black text-slate-900">
                             {aiPlanData?.chikitsaSutra || chikitsa.suggestedProtocol?.protocolTitle || 'Recommended Clinical Regimen'}
@@ -787,7 +787,7 @@ export default function OpdChikitsaPlanTab({
                         className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer"
                       >
                         <Sparkles size={13} />
-                        <span>✨ Nidan AI सुझाई गई औषधियां लागू करें (Apply Regimen)</span>
+                        <span>✨ NIDAAN AI सुझाई गई औषधियां लागू करें (Apply Regimen)</span>
                       </button>
                     </div>
 
@@ -1013,19 +1013,19 @@ export default function OpdChikitsaPlanTab({
               </div>
             </div>
 
-            {/* If NO panchakarma ordered yet: show Nidan AI suggestion CTA */}
+            {/* If NO panchakarma ordered yet: show NIDAAN AI suggestion CTA */}
             {panchakarmaOrders.length === 0 ? (
               suggestedPanchakarmaList.length > 0 && (
                 <div className="mt-4 p-3.5 rounded-xl bg-purple-50/60 border border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 block">
-                      Nidan AI शोधन सुझाव (Suggested Shodhana Protocol)
+                      NIDAAN AI शोधन सुझाव (Suggested Shodhana Protocol)
                     </span>
                     <span className="font-bold text-slate-900 text-sm">
                       {suggestedPanchakarmaList[0].protocolName || suggestedPanchakarmaList[0].procedure || 'Classical Shodhana Protocol'}
                     </span>
                     <p className="text-[11px] text-slate-600 mt-0.5">
-                      रोगी की व्यायाम शक्ति ({vyayamaShakti.grade || 'Madhyama'}) एवं दोष स्थिति अनुसार Nidan AI द्वारा प्रस्तावित क्रम।
+                      रोगी की व्यायाम शक्ति ({vyayamaShakti.grade || 'Madhyama'}) एवं दोष स्थिति अनुसार NIDAAN AI द्वारा प्रस्तावित क्रम।
                     </p>
                   </div>
 

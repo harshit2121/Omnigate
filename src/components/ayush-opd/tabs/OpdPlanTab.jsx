@@ -173,8 +173,8 @@ export default function OpdPlanTab({
 
       {/* ─── CORRELATED DIAGNOSTIC BASELINE (FROM ASSESSMENT & OBJECTIVE) ─── */}
       <NidanAiCard
-        badge="Nidan AI"
-        title="निदान AI सहसंबद्ध नैदानिक आधार (Correlated Clinical Baseline for Rx)"
+        badge="NIDAAN AI"
+        title="NIDAAN AI सहसंबद्ध नैदानिक आधार (Correlated Clinical Baseline for Rx)"
         subtitle={confirmedDiagnosis ? '✓ प्रमाणित निदान से सहसंबद्ध — औषध योग एवं मात्रा स्वचालित रूप से संयोजित' : 'पूर्व-निदान से सहसंबद्ध (निदान सत्यापन प्रतीक्षित)'}
         innerClassName="p-4 space-y-3"
       >
@@ -253,8 +253,8 @@ export default function OpdPlanTab({
 
       {/* ─── 2. PHYSICIAN AI ASSIST: RECOMMENDED FORMULATIONS ─── */}
       <NidanAiCard
-        badge="Nidan AI"
-        title="निदान AI शास्त्रीय औषध योग अनुशंसा (Evidence-Based Formulations)"
+        badge="NIDAAN AI"
+        title="NIDAAN AI शास्त्रीय औषध योग अनुशंसा (Evidence-Based Formulations)"
         subtitle="सत्यापित सम्प्राप्ति एवं त्रिदोष स्थिति अनुसार अनुशंसित शास्त्रीय योग — '+ नुस्खे में जोड़ें' द्वारा शामिल करें"
         headerRight={
           <button

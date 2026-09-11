@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Flower2, Flame, Droplets, Wind, Activity, 
+  Flame, Droplets, Wind, Activity, 
   CheckCircle2, Utensils, HelpCircle, Download,
   Share2, Volume2, ShieldCheck, Sparkles,
   ChevronRight, ChevronLeft, Award, RotateCcw,
@@ -149,11 +149,6 @@ export default function AyushParikshaModule({
       {/* 1. PRESTIGIOUS GOVT OF INDIA & CCRAS CERTIFIED KIOSK HEADER               */}
       {/* ========================================================================= */}
       <div className="bg-gradient-to-r from-[#062444] via-[#0B4C8C] to-[#0A3866] text-white p-5 sm:p-7 rounded-3xl shadow-xl border-2 border-[#165a9e] relative overflow-hidden">
-        {/* Subtle decorative ayurvedic watermark */}
-        <div className="absolute right-2 top-0 bottom-0 opacity-8 flex items-center pointer-events-none pr-4">
-          <Flower2 size={180} />
-        </div>
-
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
           {/* Official Emblem & Credentials */}
           <div className="flex items-center gap-4">
@@ -191,31 +186,16 @@ export default function AyushParikshaModule({
             </div>
           </div>
 
-          {/* Mode Badge & View Switcher */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {viewMode === 'questions' ? (
+          {/* Quick Actions / Certified Result CTAs */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {answeredInMode > 0 && (
               <Button
                 variant="outline"
                 onClick={() => setViewMode('summary')}
-                disabled={answeredInMode === 0}
-                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-2xl h-11 px-4 text-xs flex items-center gap-2 shadow-md cursor-pointer border-amber-300"
+                className="border-amber-300/60 bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 font-extrabold rounded-2xl h-11 px-4 text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <FileText size={16} />
-                <span>{isHi ? 'प्रमाणित परिणाम देखें' : 'View Certified Result'}</span>
-                {answeredInMode > 0 && (
-                  <span className="bg-slate-900 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-mono">
-                    {answeredInMode}/{questionsList.length}
-                  </span>
-                )}
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={() => setViewMode('questions')}
-                className="bg-white/20 hover:bg-white/30 text-white font-black rounded-2xl h-11 px-4 text-xs flex items-center gap-2 shadow-xs cursor-pointer border-white/30"
-              >
-                <ChevronLeft size={16} />
-                <span>{isHi ? 'प्रश्नों पर वापस जाएं' : 'Back to Assessment'}</span>
+                <FileText size={15} className="text-amber-300" />
+                <span>{isHi ? 'प्रकृति परिणाम देखें' : 'View Certified Result'}</span>
               </Button>
             )}
 
@@ -232,7 +212,7 @@ export default function AyushParikshaModule({
           </div>
         </div>
 
-        {/* Mode Selector Strip: Nidan AI Adaptive Quick Mode vs CCRAS Full */}
+        {/* Mode Selector Strip: NIDAAN AI Adaptive Quick Mode vs CCRAS Full */}
         <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4 border-t border-white/15">
           <div className="flex items-center gap-2">
             <span className="text-xs font-black text-amber-300 flex items-center gap-1 uppercase tracking-wider">
@@ -253,7 +233,7 @@ export default function AyushParikshaModule({
                 }`}
               >
                 <NidanAiLogo size={14} />
-                <span>{isHi ? 'निदान AI त्वरित (10 प्रश्न - 3 मिनट)' : 'Nidan AI Quick (10 Qs)'}</span>
+                <span>{isHi ? 'निदान AI त्वरित (10 प्रश्न - 3 मिनट)' : 'NIDAAN AI Quick (10 Qs)'}</span>
               </button>
               <button
                 type="button"
@@ -317,7 +297,7 @@ export default function AyushParikshaModule({
               <Badge className={assessmentMode === 'nidan_adaptive' ? "bg-slate-900 text-white font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5" : "bg-[#0B4C8C] text-white font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs"}>
                 {assessmentMode === 'nidan_adaptive' && <NidanAiLogo size={14} />}
                 <span>{isHi ? `लक्षण ${safeIndex + 1} / ${questionsList.length}` : `Trait ${safeIndex + 1} of ${questionsList.length}`}</span>
-                {assessmentMode === 'nidan_adaptive' && <span className="text-sky-300 font-bold">• Nidan AI</span>}
+                {assessmentMode === 'nidan_adaptive' && <span className="text-sky-300 font-bold">• NIDAAN AI</span>}
               </Badge>
               <span className="text-xs font-bold text-[#5B677E] hidden sm:inline flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-xl">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
@@ -503,7 +483,7 @@ export default function AyushParikshaModule({
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className="bg-[#0B4C8C] text-white text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 flex items-center gap-1.5">
                       {assessmentMode === 'nidan_adaptive' && <NidanAiLogo size={12} />}
-                      <span>{assessmentMode === 'nidan_adaptive' ? 'Nidan AI Adaptive CCRAS' : 'CCRAS Certified Assessment'}</span>
+                      <span>{assessmentMode === 'nidan_adaptive' ? 'NIDAAN AI Adaptive CCRAS' : 'CCRAS Certified Assessment'}</span>
                     </Badge>
                     <span className="text-xs font-bold text-slate-500">
                       • {answeredInMode} / {questionsList.length} {isHi ? 'मापदंडों पर आधारित' : 'Parameters Recorded'}

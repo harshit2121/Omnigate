@@ -3,9 +3,9 @@ import NidanAiLogo from './NidanAiLogo';
 export default function NidanAiCard({
   title,
   subtitle,
-  badge = 'Nidan AI',
+  badge = 'NIDAAN AI',
   showLogo = true,
-  logoSize = 'sm',
+  logoSize = 'md',
   headerRight,
   children,
   className = '',
@@ -21,9 +21,9 @@ export default function NidanAiCard({
         {/* Clinical Header */}
         {(title || badge) && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3 mb-4 relative z-10">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               {showLogo && (
-                <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center shrink-0 p-1">
                   <NidanAiLogo size={logoSize} />
                 </div>
               )}

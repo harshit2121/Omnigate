@@ -370,7 +370,7 @@ export default function OpdPatientSummaryTab({
             ) : (
               <div className="p-4 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500">
                 <p className="font-bold text-slate-700">अद्यावधि कोई शमन योग निर्धारित नहीं है (No formulations prescribed yet)</p>
-                <p className="text-[11px] mt-0.5">कृपया Phase 3 (Chikitsa Plan) में जाकर Nidan AI सुझाया गया योग लागू करें अथवा स्वयं नुस्खा जोड़ें।</p>
+                <p className="text-[11px] mt-0.5">कृपया Phase 3 (Chikitsa Plan) में जाकर NIDAAN AI सुझाया गया योग लागू करें अथवा स्वयं नुस्खा जोड़ें।</p>
               </div>
             )}
           </div>

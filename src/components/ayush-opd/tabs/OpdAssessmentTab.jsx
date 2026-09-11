@@ -213,8 +213,8 @@ export default function OpdAssessmentTab({
 
       {/* ─── CORRELATED CLINICAL INPUTS BAR (AI MULTI-MODAL SYNTHESIS) ─── */}
       <NidanAiCard
-        badge="Nidan AI"
-        title="निदान AI बहु-आयामी सहसंबंध (Multi-Modal Clinical Evidence)"
+        badge="NIDAAN AI"
+        title="NIDAAN AI बहु-आयामी सहसंबंध (Multi-Modal Clinical Evidence)"
         subtitle="सभी इनपुट (लक्षण, पूछताछ, परीक्षा, प्रकृति) को एकीकृत कर तैयार किया गया"
         innerClassName="p-4 space-y-3"
       >
@@ -318,8 +318,8 @@ export default function OpdAssessmentTab({
       ) : (
         // STATE B: PENDING CONFIRMATION — DO NOT AUTO-FEED!
         <NidanAiCard
-          badge="Nidan AI"
-          title="निदान AI रोग-विनिश्चय अनुशंसा (Diagnostic Suggestions)"
+          badge="NIDAAN AI"
+          title="NIDAAN AI रोग-विनिश्चय अनुशंसा (Diagnostic Suggestions)"
           subtitle="अंतिम निदान की पुष्टि चिकित्सक द्वारा की जानी शेष है — एआई केवल नैदानिक सुझाव प्रस्तुत करता है"
           innerClassName="p-5 space-y-4"
         >

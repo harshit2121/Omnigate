@@ -235,7 +235,7 @@ export default function OpdSubjectiveTab({
           <NidanAiCard
             title="रोगी नैदानिक पूछताछ उत्तर (Kiosk Patient Responses)"
             subtitle="रोगी ने किओस्क पर मुख्य समस्या चुनने के बाद इन शास्त्रीय प्रश्नों के उत्तर स्वयं दिए हैं"
-            badge="Nidan AI"
+            badge="NIDAAN AI"
             headerRight={
               <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/90 px-2.5 py-0.5 rounded-full">
                 ✓ Recorded at MediKiosk
