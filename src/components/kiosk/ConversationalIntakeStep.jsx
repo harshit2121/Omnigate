@@ -14,6 +14,7 @@ import dynamicClinicalAiService from '../../services/dynamicClinicalAiService';
 import { ayushAiCopilotService } from '../../services/ayushAiCopilotService';
 import voiceAssistant from '../../services/voiceAssistant';
 import NidanAiCard from '../ui/NidanAiCard';
+import NidanAiLogo from '../ui/NidanAiLogo';
 
 export default function ConversationalIntakeStep({
   intakeData,
@@ -263,7 +264,7 @@ export default function ConversationalIntakeStep({
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto p-1">
           {[
             { id: 'hpi', labelEn: '1. Present Illness (HPI - SOCRATES)', labelHi: '१. मुख्य समस्या (HPI)', icon: Stethoscope },
-            { id: 'ai_inquiries', labelEn: '2. Nidan AI™ Inquiries', labelHi: '२. निदान AI™ पूछताछ', icon: Sparkles },
+            { id: 'ai_inquiries', labelEn: '2. Nidan AI Inquiries', labelHi: '२. निदान AI पूछताछ', icon: NidanAiLogo },
             { id: 'past_history', labelEn: '3. Past History & Allergies', labelHi: '३. पुराना इतिहास व एलर्जी', icon: History },
             { id: 'current_meds', labelEn: '4. Medication History', labelHi: '४. दवा इतिहास', icon: Pill }
           ].map(tab => {
@@ -565,10 +566,10 @@ export default function ConversationalIntakeStep({
                   </Button>
                   <Button
                     onClick={() => setActiveIntakeTab('ai_inquiries')}
-                    className="bg-[#0B4C8C] hover:bg-[#072d54] text-white rounded-lg h-8 px-3 text-xs font-black shadow-xs flex items-center gap-1 cursor-pointer"
+                    className="bg-[#0B4C8C] hover:bg-[#072d54] text-white rounded-lg h-8 px-3 text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Sparkles size={12} />
-                    <span>{currentLang === 'hi' ? 'निदान AI™ प्रश्न →' : 'Nidan AI™ Inquiries →'}</span>
+                    <NidanAiLogo size={14} />
+                    <span>{currentLang === 'hi' ? 'निदान AI प्रश्न →' : 'Nidan AI Inquiries →'}</span>
                   </Button>
                 </div>
               </div>
@@ -582,33 +583,33 @@ export default function ConversationalIntakeStep({
       {/* ========================================================================= */}
       {activeIntakeTab === 'ai_inquiries' && (
         <NidanAiCard
-          badge="Nidan AI™"
-          title={currentLang === 'hi' ? 'निदान AI™ नैदानिक पूछताछ (Targeted Clinical Inquiries)' : 'Nidan AI™ Targeted Clinical Inquiries'}
+          badge="Nidan AI"
+          title={currentLang === 'hi' ? 'निदान AI नैदानिक पूछताछ (Targeted Clinical Inquiries)' : 'Nidan AI Targeted Clinical Inquiries'}
           subtitle={currentLang === 'hi' ? 'मुख्य समस्या आधारित गहन पूछताछ — आपके उत्तर सीधे डॉक्टर के ओपीडी स्क्रीन पर दिखाई देंगे।' : 'Diagnostic inquiries tailored to your complaint. Responses appear directly on the doctor’s workstation.'}
           innerClassName="p-6 sm:p-8 space-y-6"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-indigo-100 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <Badge className="bg-gradient-to-r from-indigo-600 to-[#0B4C8C] text-white border-0 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg">
-                  <Sparkles size={12} className="mr-1 inline" />
-                  Nidan AI™ Clinical Pre-Consultation
+                <Badge className="bg-sky-50 text-[#0B4C8C] border border-sky-200 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg flex items-center gap-1">
+                  <NidanAiLogo size={12} />
+                  <span>Nidan AI Clinical Pre-Consultation</span>
                 </Badge>
-                <span className="text-xs font-bold text-indigo-700">
+                <span className="text-xs font-bold text-slate-600">
                   {currentLang === 'hi' ? 'चिकित्सक परामर्श हेतु विशेष प्रश्न' : 'Targeted Questions for Physician'}
                 </span>
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-[#16213A] mt-1" style={{ fontFamily: "'Fraunces', serif" }}>
-                {currentLang === 'hi' ? 'निदान AI™ नैदानिक पूछताछ (Clinical Inquiries)' : 'Targeted Clinical Inquiries'}
+                {currentLang === 'hi' ? 'निदान AI नैदानिक पूछताछ (Clinical Inquiries)' : 'Targeted Clinical Inquiries'}
               </h3>
               <p className="text-xs sm:text-sm text-[#5B677E] font-medium mt-0.5">
                 {currentLang === 'hi'
-                  ? 'आपकी मुख्य समस्या के आधार पर निदान AI™ द्वारा उत्पन्न प्रश्न। आपके उत्तर सीधे डॉक्टर के ओपीडी स्क्रीन पर दिखाई देंगे।'
+                  ? 'आपकी मुख्य समस्या के आधार पर निदान AI द्वारा उत्पन्न प्रश्न। आपके उत्तर सीधे डॉक्टर के ओपीडी स्क्रीन पर दिखाई देंगे।'
                   : 'Diagnostic inquiries tailored to your complaint. Your responses will appear directly on the doctor’s workstation.'}
               </p>
             </div>
 
-            <Badge className="bg-indigo-50 text-indigo-900 border-2 border-indigo-200 text-xs font-black px-3.5 py-1.5 rounded-xl self-start sm:self-auto">
+            <Badge className="bg-slate-100 text-slate-800 border border-slate-200 text-xs font-black px-3.5 py-1.5 rounded-xl self-start sm:self-auto">
               {Object.keys(aiInquiriesResponse).length} / {kioskAiInquiries.length || 3} {currentLang === 'hi' ? 'उत्तर दिए गए' : 'Answered'}
             </Badge>
           </div>

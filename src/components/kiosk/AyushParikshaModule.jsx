@@ -20,6 +20,7 @@ import { printPrakritiDietPlan } from '../../utils/prakritiPdfGenerator';
 import voiceAssistant from '../../services/voiceAssistant';
 import AyushTraitVisual from './AyushTraitVisuals';
 import NidanAiCard from '../ui/NidanAiCard';
+import NidanAiLogo from '../ui/NidanAiLogo';
 
 export const NIDAN_AI_ADAPTIVE_QUESTION_IDS = [
   'ccras_phy_1',    // Sharira Pramana (Physical frame)
@@ -251,8 +252,8 @@ export default function AyushParikshaModule({
                     : 'text-blue-100 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <Sparkles size={12} />
-                <span>{isHi ? '✨ निदान AI™ त्वरित (10 प्रश्न - 3 मिनट)' : '✨ Nidan AI™ Quick (10 Qs)'}</span>
+                <NidanAiLogo size={14} />
+                <span>{isHi ? 'निदान AI त्वरित (10 प्रश्न - 3 मिनट)' : 'Nidan AI Quick (10 Qs)'}</span>
               </button>
               <button
                 type="button"
@@ -313,9 +314,10 @@ export default function AyushParikshaModule({
           {/* Stepper Header Strip */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DCE3EC] pb-4">
             <div className="flex items-center gap-3">
-              <Badge className={assessmentMode === 'nidan_adaptive' ? "bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs" : "bg-[#0B4C8C] text-white font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs"}>
-                {isHi ? `लक्षण ${safeIndex + 1} / ${questionsList.length}` : `Trait ${safeIndex + 1} of ${questionsList.length}`}
-                {assessmentMode === 'nidan_adaptive' && ' • Nidan AI™'}
+              <Badge className={assessmentMode === 'nidan_adaptive' ? "bg-slate-900 text-white font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs flex items-center gap-1.5" : "bg-[#0B4C8C] text-white font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs"}>
+                {assessmentMode === 'nidan_adaptive' && <NidanAiLogo size={14} />}
+                <span>{isHi ? `लक्षण ${safeIndex + 1} / ${questionsList.length}` : `Trait ${safeIndex + 1} of ${questionsList.length}`}</span>
+                {assessmentMode === 'nidan_adaptive' && <span className="text-sky-300 font-bold">• Nidan AI</span>}
               </Badge>
               <span className="text-xs font-bold text-[#5B677E] hidden sm:inline flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-xl">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
@@ -499,8 +501,9 @@ export default function AyushParikshaModule({
                 </div>
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-[#0B4C8C] text-white text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5">
-                      {assessmentMode === 'nidan_adaptive' ? '✨ Nidan AI™ Adaptive CCRAS' : 'CCRAS Certified Assessment'}
+                    <Badge className="bg-[#0B4C8C] text-white text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 flex items-center gap-1.5">
+                      {assessmentMode === 'nidan_adaptive' && <NidanAiLogo size={12} />}
+                      <span>{assessmentMode === 'nidan_adaptive' ? 'Nidan AI Adaptive CCRAS' : 'CCRAS Certified Assessment'}</span>
                     </Badge>
                     <span className="text-xs font-bold text-slate-500">
                       • {answeredInMode} / {questionsList.length} {isHi ? 'मापदंडों पर आधारित' : 'Parameters Recorded'}

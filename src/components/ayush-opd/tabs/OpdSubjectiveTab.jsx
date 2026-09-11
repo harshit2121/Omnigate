@@ -228,16 +228,16 @@ export default function OpdSubjectiveTab({
           </div>
         </div>
 
-        {/* COL 2: NIDAN AI™ KIOSK PATIENT INQUIRIES & DOCTOR CLINICAL NOTES */}
+        {/* COL 2: NIDAN AI KIOSK PATIENT INQUIRIES & DOCTOR CLINICAL NOTES */}
         <div className="space-y-4">
 
-          {/* ─── NIDAN AI™ KIOSK PATIENT INQUIRY RESPONSES (WITH ANIMATED GLOWING BORDER) ─── */}
+          {/* ─── NIDAN AI KIOSK PATIENT INQUIRY RESPONSES ─── */}
           <NidanAiCard
-            title="रोगी नैदानिक पूछताछ उत्तर (Kiosk Patient AI Responses)"
+            title="रोगी नैदानिक पूछताछ उत्तर (Kiosk Patient Responses)"
             subtitle="रोगी ने किओस्क पर मुख्य समस्या चुनने के बाद इन शास्त्रीय प्रश्नों के उत्तर स्वयं दिए हैं"
-            badge="Nidan AI™"
+            badge="Nidan AI"
             headerRight={
-              <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/90 px-2.5 py-0.5 rounded-full">
                 ✓ Recorded at MediKiosk
               </span>
             }

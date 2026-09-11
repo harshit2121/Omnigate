@@ -213,8 +213,8 @@ export default function OpdAssessmentTab({
 
       {/* ─── CORRELATED CLINICAL INPUTS BAR (AI MULTI-MODAL SYNTHESIS) ─── */}
       <NidanAiCard
-        badge="Nidan AI™"
-        title="निदान AI™ बहु-आयामी सहसंबंध (Multi-Modal Clinical Evidence)"
+        badge="Nidan AI"
+        title="निदान AI बहु-आयामी सहसंबंध (Multi-Modal Clinical Evidence)"
         subtitle="सभी इनपुट (लक्षण, पूछताछ, परीक्षा, प्रकृति) को एकीकृत कर तैयार किया गया"
         innerClassName="p-4 space-y-3"
       >
@@ -264,7 +264,7 @@ export default function OpdAssessmentTab({
           <div className="bg-white/90 border border-indigo-200 rounded-lg p-2.5 text-xs text-indigo-950 font-medium flex items-start gap-2">
             <Sparkles size={14} className="text-indigo-600 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-indigo-900 font-bold">निदान AI™ नैदानिक सहसंबंध: </strong>
+              <strong className="text-indigo-900 font-bold">निदान AI नैदानिक सहसंबंध: </strong>
               {aiData.correlationSummary}
             </div>
           </div>
@@ -318,8 +318,8 @@ export default function OpdAssessmentTab({
       ) : (
         // STATE B: PENDING CONFIRMATION — DO NOT AUTO-FEED!
         <NidanAiCard
-          badge="Nidan AI™"
-          title="निदान AI™ रोग-विनिश्चय अनुशंसा (Diagnostic Suggestions)"
+          badge="Nidan AI"
+          title="निदान AI रोग-विनिश्चय अनुशंसा (Diagnostic Suggestions)"
           subtitle="अंतिम निदान की पुष्टि चिकित्सक द्वारा की जानी शेष है — एआई केवल नैदानिक सुझाव प्रस्तुत करता है"
           innerClassName="p-5 space-y-4"
         >
@@ -337,7 +337,7 @@ export default function OpdAssessmentTab({
                 अंतिम निदान की पुष्टि चिकित्सक द्वारा की जानी शेष है
               </h3>
               <p className="text-xs text-slate-600 font-medium mt-0.5">
-                निदान AI™ केवल नैदानिक सुझाव प्रस्तुत करता है। कृपया नीचे दिए गए 3 सुझावों में से उपयुक्त निदान चुनें और <strong>"पुष्टि करें"</strong> पर क्लिक करें, अथवा अपना स्वतंत्र निदान दर्ज करें।
+                निदान AI केवल नैदानिक सुझाव प्रस्तुत करता है। कृपया नीचे दिए गए 3 सुझावों में से उपयुक्त निदान चुनें और <strong>"पुष्टि करें"</strong> पर क्लिक करें, अथवा अपना स्वतंत्र निदान दर्ज करें।
               </p>
             </div>
           </div>
@@ -345,7 +345,7 @@ export default function OpdAssessmentTab({
           {/* AI Diagnostic Suggestions Cards */}
           <div className="space-y-3">
             <span className="text-[11px] font-black text-indigo-950 uppercase tracking-wider block">
-              निदान AI™ द्वारा अनुशंसित संभावित निदान (Clinical Diagnostic Suggestions):
+              निदान AI द्वारा अनुशंसित संभावित निदान (Clinical Diagnostic Suggestions):
             </span>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
