@@ -70,8 +70,8 @@ export default function OpdPrescriptionTab({
                   gender: selectedCase.patient?.gender,
                   uhid: selectedCase.uhid,
                   abhaId: selectedCase.patient?.abhaId,
-                  diagnosis: selectedCase.intake?.complaintLabel || 'Amlapitta',
-                  icdCode: selectedCase.intake?.namasteCode || 'NAMASTE-AYU-AML-01',
+                  diagnosis: confirmedDiagnosis?.name || selectedCase.assessment?.confirmedDiagnosis?.name || selectedCase.intake?.chiefComplaint || selectedCase.intake?.complaintLabel || 'General Consultation',
+                  icdCode: confirmedDiagnosis?.namasteCode || selectedCase.assessment?.confirmedDiagnosis?.namasteCode || selectedCase.intake?.namasteCode || 'AYU-GEN-01',
                   prakriti: selectedCase.pariksha?.prakritiResult?.dominant,
                   medications: prescriptions.map(p => ({
                     drugName: p.name,

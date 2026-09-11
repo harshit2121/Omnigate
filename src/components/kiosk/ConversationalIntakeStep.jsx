@@ -127,6 +127,17 @@ export default function ConversationalIntakeStep({
         currentLang
       }).then(inquiries => {
         setKioskAiInquiries(inquiries);
+        setIntakeData(prev => ({
+          ...prev,
+          kioskAiInquiries: inquiries,
+          kioskInquiries: inquiries.map(item => ({
+            id: item.id,
+            questionHi: item.questionHi,
+            questionEn: item.questionEn,
+            patientAnswer: prev.aiInquiriesResponse?.[item.id]?.answer || null,
+            clinicalReason: item.clinicalReason
+          }))
+        }));
         setIsLoadingAiInquiries(false);
       }).catch(err => {
         console.warn('Failed generating kiosk AI inquiries:', err);
@@ -685,10 +696,23 @@ export default function ConversationalIntakeStep({
                                   clinicalReason: inq.clinicalReason
                                 }
                               };
+                              const activeList = kioskAiInquiries.length > 0 ? kioskAiInquiries : [inq];
+                              const updatedInquiries = activeList.map(item => {
+                                const ans = item.id === inq.id ? opt : (aiInquiriesResponse[item.id]?.answer || null);
+                                return {
+                                  id: item.id,
+                                  questionHi: item.questionHi,
+                                  questionEn: item.questionEn,
+                                  patientAnswer: ans,
+                                  clinicalReason: item.clinicalReason
+                                };
+                              });
+
                               setAiInquiriesResponse(updated);
                               setIntakeData(prev => ({
                                 ...prev,
-                                aiInquiriesResponse: updated
+                                aiInquiriesResponse: updated,
+                                kioskInquiries: updatedInquiries
                               }));
                               voiceAssistant.playAudioCue('beep');
                               if (voiceEnabled) {

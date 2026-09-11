@@ -52,7 +52,7 @@ export default function OpdAssessmentTab({
       const res = await ayushAiCopilotService.generateAssessmentAssist({
         patientAge: selectedCase?.patient?.age || 45,
         patientGender: selectedCase?.patient?.gender || 'Female',
-        chiefComplaint: selectedCase?.intake?.complaintLabel || 'Amlapitta',
+        chiefComplaint: selectedCase?.intake?.chiefComplaint || selectedCase?.intake?.complaintLabelHi || selectedCase?.intake?.complaintLabel || selectedCase?.chiefComplaint || 'सामान्य बाह्य रोगी परामर्श',
         complaintId: selectedCase?.intake?.complaintId || '',
         socrates: {
           site: selectedCase?.intake?.answers?.site,
@@ -222,7 +222,7 @@ export default function OpdAssessmentTab({
           <div className="bg-white/90 p-2 rounded-lg border border-indigo-100 shadow-2xs">
             <div className="text-[10px] font-bold text-slate-400 uppercase">१. लक्षण एवं पूछताछ</div>
             <div className="font-extrabold text-slate-900 truncate">
-              {selectedCase?.intake?.complaintLabel || 'Amlapitta'}
+              {selectedCase?.intake?.chiefComplaint || selectedCase?.intake?.complaintLabelHi || selectedCase?.intake?.complaintLabel || selectedCase?.chiefComplaint || 'सामान्य परामर्श'}
             </div>
             <div className="text-[10px] text-emerald-700 font-bold">
               ✓ किओस्क पूछताछ उत्तर शामिल

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Volume2, Users, Clock, AlertTriangle, ShieldCheck, ArrowLeft, RefreshCw, Radio } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { voiceAssistant } from '../services/voiceAssistant';
+import { supabaseOpdService } from '../services/supabaseOpdService';
 
 export default function OpdWaitingDisplay() {
   const [queue, setQueue] = useState([]);
@@ -15,39 +16,35 @@ export default function OpdWaitingDisplay() {
     return () => clearInterval(timer);
   }, []);
 
-  // Poll / Read from localStorage for live synchronization with doctor's workstation
-  const loadQueueData = () => {
-    try {
-      const storedQueue = localStorage.getItem('omni_kiosk_queue');
-      const storedActive = localStorage.getItem('omni_active_opd_case');
-
-      if (storedQueue) {
-        const parsed = JSON.parse(storedQueue);
-        if (Array.isArray(parsed)) {
-          setQueue(parsed);
-        }
-      }
-
-      if (storedActive) {
-        const parsedActive = JSON.parse(storedActive);
-        setActiveCase(parsedActive);
-      } else {
-        // Fallback: check if any in queue has IN_CONSULTATION
-        if (storedQueue) {
-          const parsed = JSON.parse(storedQueue);
-          const activeInQ = parsed.find(c => c.status === 'IN_CONSULTATION');
-          if (activeInQ) setActiveCase(activeInQ);
-        }
-      }
-    } catch (e) {
-      console.error('Error loading OPD queue for TV display:', e);
-    }
-  };
-
+  // Fetch from Supabase and subscribe to Realtime queue updates
   useEffect(() => {
-    loadQueueData();
-    const interval = setInterval(loadQueueData, 2000);
-    return () => clearInterval(interval);
+    let isMounted = true;
+
+    const fetchLive = async () => {
+      const cases = await supabaseOpdService.fetchOpdQueue();
+      if (isMounted) {
+        setQueue(cases);
+        const inRoom = cases.find(c => c.status === 'IN_CONSULTATION');
+        if (inRoom) setActiveCase(inRoom);
+      }
+    };
+
+    fetchLive();
+
+    const unsubscribe = supabaseOpdService.subscribeToOpdQueue((fresh) => {
+      if (isMounted) {
+        setQueue(fresh);
+        const inRoom = fresh.find(c => c.status === 'IN_CONSULTATION');
+        if (inRoom) {
+          setActiveCase(inRoom);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   // Announce token with chime

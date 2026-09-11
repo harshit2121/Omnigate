@@ -11,6 +11,7 @@ import SummaryConfirmationStep from '../components/kiosk/SummaryConfirmationStep
 import { SAMPLE_DOCUMENTS } from '../services/ocrService';
 import { generateFhirCaseBundle } from '../services/fhirService';
 import voiceAssistant from '../services/voiceAssistant';
+import { supabaseOpdService } from '../services/supabaseOpdService';
 
 export default function MediKiosk() {
   const navigate = useNavigate();
@@ -153,21 +154,16 @@ export default function MediKiosk() {
       ocrDocuments
     });
 
-    const newCase = {
+    // Persist encounter directly to Supabase PostgreSQL database and local clinical sync
+    supabaseOpdService.createKioskEncounter({
       token: newToken,
-      id: `case-${Date.now()}`,
-      timestamp: new Date().toISOString(),
       patient: patientData,
       intake: intakeData,
       pariksha: parikshaData,
       documents: ocrDocuments,
       fhirBundle,
-      status: redFlagAlert ? 'EMERGENCY_PRIORITY' : 'WAITING_OPD',
       redFlag: redFlagAlert
-    };
-
-    const existingQueue = JSON.parse(localStorage.getItem('ayush_opd_queue') || '[]');
-    localStorage.setItem('ayush_opd_queue', JSON.stringify([newCase, ...existingQueue]));
+    });
 
     voiceAssistant.playAudioCue('success');
     if (voiceEnabled) {

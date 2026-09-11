@@ -12,7 +12,8 @@ export default function OpdQueueRoster({
   setActiveTabFilter,
   filteredQueue,
   openPatientEncounter,
-  handleCallNextToken
+  handleCallNextToken,
+  onSeedSample
 }) {
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-4">
@@ -214,6 +215,69 @@ export default function OpdQueueRoster({
                 </tr>
               );
             })}
+
+            {filteredQueue.length === 0 && (
+              <tr>
+                <td colSpan={10} style={{ padding: '48px 20px', textAlign: 'center', background: '#FFFFFF' }}>
+                  <div style={{ maxWidth: 520, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0B4C8C' }}>
+                      <Users size={26} />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 'bold', color: '#0F172A' }}>
+                        ओपीडी कतार में कोई मरीज नहीं है • OPD Queue is Empty
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#64748B', lineHeight: '1.5' }}>
+                        {searchQuery 
+                          ? `No patient matches search query "${searchQuery}".` 
+                          : 'Zero demo cases loaded. Patients registering at MediKiosk or Reception will appear here in real-time via Supabase.'}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 10, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <a
+                        href="/kiosk"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '8px 16px',
+                          borderRadius: '4px',
+                          background: '#0B4C8C',
+                          color: 'white',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <span>मरीज़ पंजीकरण (Open MediKiosk)</span>
+                        <ArrowRight size={13} />
+                      </a>
+                      {onSeedSample && (
+                        <button
+                          onClick={onSeedSample}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '8px 16px',
+                            borderRadius: '4px',
+                            background: '#F8FAFC',
+                            border: '1px solid #CBD5E1',
+                            color: '#334155',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ✨ Seed Sample Patient into Supabase
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 

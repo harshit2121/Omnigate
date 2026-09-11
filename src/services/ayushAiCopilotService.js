@@ -402,7 +402,18 @@ Return JSON format:
     "Step 1 citing patient's specific presentation and inquiries",
     "Step 2 citing Dosha-Dushya interaction",
     "Step 3 correlating examination findings (Nadi/Jihwa/Vitals)"
-  ]
+  ],
+  "nidana": {
+    "aharaja": ["Dietary trigger 1", "Dietary trigger 2"],
+    "viharaja": ["Lifestyle trigger 1", "Lifestyle trigger 2"],
+    "manasika": ["Emotional trigger 1", "Emotional trigger 2"]
+  },
+  "purvarupa": ["Prodromal sign 1", "Prodromal sign 2"],
+  "rupa": ["Manifested symptom 1", "Manifested symptom 2"],
+  "upashayaAnupashaya": {
+    "upashaya": ["Relieving factor 1 (✓)", "Relieving factor 2 (✓)"],
+    "anupashaya": ["Aggravating factor 1 (✗)", "Aggravating factor 2 (✗)"]
+  }
 }
 Return ONLY valid JSON.`;
         const res = await this.callGeminiRaw(prompt);
@@ -452,7 +463,50 @@ Return ONLY valid JSON.`;
           `Impaired Jatharagni causes formation of unripe Ama that circulates via Rasavaha channels.`,
           `Ama lodges in Sandhis (joint cavities) where Shleshaka Kapha is already perturbed by ${prakriti}.`,
           `This causes characteristic Stambha (morning stiffness), Toda (pricking pain), and localized Sparsha-Asahatva.`
-        ]
+        ],
+        nidana: {
+          aharaja: [
+            'Sheeta & Ruksha Ahara (शीत एवं रूक्ष आहार सेवन)',
+            'Vishamashana (अनियमित खानपान)',
+            'Katu & Kashaya Rasa Atisevana (अत्यधिक तीखा व कसैला भोजन)'
+          ],
+          viharaja: [
+            'Ati-Vyayama & Gamana (अत्यधिक चलना या शारीरिक श्रम)',
+            'Sheeta Vata Sevana (ठंडी हवा एवं एसी का निरंतर संपर्क)',
+            'Ratri Jagarana (देर रात तक जागना / वात प्रकोप)',
+            'Vegadharana (मल-मूत्र आदि वेगावरोध)'
+          ],
+          manasika: [
+            'Chinta & Manodvega (अत्यधिक चिंता व तनाव)',
+            'Shoka & Bhaya (शोक व भय — वात प्रकोपक)'
+          ]
+        },
+        purvarupa: [
+          'Sandhi Stambha (प्रातःकाल जोड़ों में जकड़ाहट)',
+          'Gatra Gaurava (शरीर में भारीपन व अंगमर्द्द)',
+          'Sandhi Sphutana (जोड़ों से कट-कट आवाज / Crepitus)',
+          'Alpa Ruja (चलने पर हल्का दर्द)'
+        ],
+        rupa: [
+          'Janu Sandhi Shoola (घुटनों व जोड़ों में तीव्र शूल)',
+          'Prasarana-Akunchana Vedana (मोड़ने व सीधा करने पर असह्य दर्द)',
+          'Sandhi Shotha (जोड़ों में सूजन व जकड़न)',
+          'Sparsha-Asahatva (स्पर्श करने पर दर्द / Tenderness)',
+          'Gati Sanga (चलने-फिरने में असमर्थता)'
+        ],
+        upashayaAnupashaya: {
+          upashaya: [
+            'Ushna Swedana & Snehana (गर्म सेंक व तैल मालिश से आराम ✓)',
+            'Vishrama (विश्राम करने से दर्द में राहत ✓)',
+            'Ushna Bhojana & Ghrita (गर्म ताजा स्निग्ध भोजन ✓)',
+            'Janu Basti & Nadi Sweda (स्थानिक जानु बस्ति चिकित्सा ✓)'
+          ],
+          anupashaya: [
+            'Sheeta Jala & Vata (ठंडे पानी या ठंडे मौसम से दर्द वृद्धि ✗)',
+            'Ati-Gamana & Bharavahana (अधिक पैदल चलना या वजन उठाना ✗)',
+            'Ruksha & Vata-vardhaka Ahara (रूखे, बासी व ठंडे भोजन से वृद्धि ✗)'
+          ]
+        }
       };
     }
 
@@ -488,7 +542,47 @@ Return ONLY valid JSON.`;
         `Consumption of Vidahi and Amla Ahara stimulates excess Drava (liquid) & Teekshna (hot/sharp) attributes of Pachaka Pitta in a ${prakriti} individual.`,
         `Impaired Apana Vayu fails in normal Anulomana (downward propulsion) and begins Vimargagamana (reverse push) towards the esophagus.`,
         `Irritation of gastric mucosa triggers classic symptoms: Hrid-Kantha Daha (chest/throat burning), Tikta-Amla Udgara (acid sour burps), and epigastric discomfort.`
-      ]
+      ],
+      nidana: {
+        aharaja: [
+          'Vidahi & Amla Ahara (तीखा, खट्टा, तला-भुना व सिरका युक्त भोजन)',
+          'Katu-Lavana Atisevana (अत्यधिक मिर्च-मसालेदार व नमकीन पदार्थ)',
+          'Viruddha Ahara & Fast Food (विरुद्धाहार, जंक फूड, बार-बार चाय/कॉफी)'
+        ],
+        viharaja: [
+          'Ratri Jagarana (देर रात तक जागना / पित्त प्रकोप)',
+          'Divasvapna post-meal (भोजनोपरांत दिन में सोना)',
+          'Bhuktva Swapna (भोजन के तुरंत बाद लेट जाना)'
+        ],
+        manasika: [
+          'Krodha & Amarsha (क्रोध, चिड़चिड़ापन व मानसिक उत्तेजना)',
+          'Chinta & Manasika Tanav (तनाव एवं अत्यधिक चिंता)'
+        ]
+      },
+      purvarupa: [
+        'Avipaka & Aruchi (भोजन में अरुचि व मंद पाचन)',
+        'Utklesha (उबकाई या मिचली जैसा अहसास)',
+        'Klama (बिना श्रम के भी थकावट)',
+        'Gaurava (उदर व शरीर में भारीपन)'
+      ],
+      rupa: [
+        'Hrit-Kantha Daha (सीने एवं कंठ में खट्टी व तीखी जलन)',
+        'Tikta-Amlodgara (कड़वे व खट्टे डकार आना)',
+        'Kukshi Shoola (पेट के ऊपरी भाग / आमाशय में शूल)',
+        'Shiroruja (पित्त वृद्धि जन्य सिरदर्द)'
+      ],
+      upashayaAnupashaya: {
+        upashaya: [
+          'Sheeta Virya Dravyas & Ghrita (शीतल पदार्थ, गाय का दूध व घृत ✓)',
+          'Mudga Yusha (मूंग दाल का हल्का सूप ✓)',
+          'Virechana & Tikta Rasa (विरेचन व तिक्त रस युक्त शमन औषधियां ✓)'
+        ],
+        anupashaya: [
+          'Tikshna-Katu Bhojana (मिर्च, राई, सिरका व खटाई ✗)',
+          'Krodha & Ratri Jagarana (क्रोध व रात्रि जागरण ✗)',
+          'Dahi & Fermented Food (खट्टा दही व किण्वित भोजन ✗)'
+        ]
+      }
     };
   }
 

@@ -243,26 +243,15 @@ export default function OpdSubjectiveTab({
             }
           >
             <div className="space-y-3 pt-1">
-              {Object.entries(intake.aiInquiriesResponse || {
-                inq_1: {
-                  questionHi: 'क्या भोजन करने के 2-3 घंटे बाद सीने या पेट में खट्टी जलन (परिणामशूल) बढ़ जाती है?',
-                  questionEn: 'Does sour burning in chest or stomach worsen 2-3 hours after meals (Parinama Shula)?',
-                  answer: 'हाँ, भोजन के 2-3 घंटे बाद तेज जलन होती है',
-                  clinicalReason: 'Differentiates Pachakagni Vidaha (Peptic Acid Burn) from Koshtha Vata'
-                },
-                inq_2: {
-                  questionHi: 'क्या प्रातःकाल सोकर उठने पर मुँह का स्वाद कड़वा (तिक्त) अथवा खट्टा (अम्ल) रहता है?',
-                  questionEn: 'Is your mouth taste bitter or sour upon waking up in the morning?',
-                  answer: 'हाँ, कड़वा व खट्टा स्वाद रहता है',
-                  clinicalReason: 'Identifies Pitta-dominant vs Kapha-dominant Amlapitta'
-                },
-                inq_3: {
-                  questionHi: 'क्या रात को देर से भोजन करने अथवा अत्यधिक मिर्च, खटाई या तली हुई चीजें खाने का अभ्यास है?',
-                  questionEn: 'Do you frequently have late-night dinners or consume spicy, sour, fried food?',
-                  answer: 'हाँ, अक्सर देर रात भोजन व मसालेदार खाना होता है',
-                  clinicalReason: 'Pinpoints primary dietary Hetu (Vidahi & Guru Ahara)'
-                }
-              }).map(([inqId, data], idx) => (
+              {((Array.isArray(intake.kioskInquiries) && intake.kioskInquiries.length > 0)
+                ? intake.kioskInquiries.map((q, idx) => [q.id || `inq_${idx}`, {
+                    questionHi: q.questionHi,
+                    questionEn: q.questionEn,
+                    answer: q.patientAnswer || q.answer || 'दर्ज उत्तर',
+                    clinicalReason: q.clinicalReason
+                  }])
+                : (intake.aiInquiriesResponse ? Object.entries(intake.aiInquiriesResponse) : [])
+              ).map(([inqId, data], idx) => (
                 <div key={inqId} className="p-3.5 bg-indigo-50/40 rounded-xl border border-indigo-100 space-y-2 hover:border-indigo-300 transition-all">
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5">

@@ -64,7 +64,7 @@ export default function OpdPlanTab({
       const res = await ayushAiCopilotService.generatePlanAssist({
         patientAge: selectedCase?.patient?.age || 45,
         patientGender: selectedCase?.patient?.gender || 'Female',
-        chiefComplaint: selectedCase?.intake?.complaintLabel || 'Amlapitta',
+        chiefComplaint: selectedCase?.intake?.chiefComplaint || selectedCase?.intake?.complaintLabelHi || selectedCase?.intake?.complaintLabel || selectedCase?.chiefComplaint || 'सामान्य बाह्य रोगी परामर्श',
         complaintId: selectedCase?.intake?.complaintId || '',
         confirmedDiagnosis: confirmedDiagnosis || selectedCase?.assessment?.confirmedDiagnosis || null,
         activeGhatakas: activeGhatakas || selectedCase?.assessment?.ghatakas || null,
@@ -182,10 +182,10 @@ export default function OpdPlanTab({
           <div className="bg-white/95 p-2.5 rounded-lg border border-emerald-200 shadow-2xs">
             <div className="text-[10px] font-bold text-slate-400 uppercase">१. रोग विनिश्चय (निदान)</div>
             <div className="font-extrabold text-slate-900 truncate">
-              {confirmedDiagnosis?.name || selectedCase?.intake?.complaintLabel || 'Amlapitta'}
+              {confirmedDiagnosis?.name || selectedCase?.assessment?.confirmedDiagnosis?.name || selectedCase?.intake?.chiefComplaint || selectedCase?.intake?.complaintLabel || 'सामान्य परामर्श'}
             </div>
             <div className="text-[10px] text-emerald-700 font-bold font-mono">
-              {confirmedDiagnosis?.namasteCode || 'AYU-AML-01'} • {confirmedDiagnosis?.icd11Code || 'MD12.0'}
+              {confirmedDiagnosis?.namasteCode || selectedCase?.assessment?.confirmedDiagnosis?.namasteCode || 'AYU-DX-CONFIRMED'} • {confirmedDiagnosis?.icd11Code || selectedCase?.assessment?.confirmedDiagnosis?.icd11Code || 'TM1'}
             </div>
           </div>
 

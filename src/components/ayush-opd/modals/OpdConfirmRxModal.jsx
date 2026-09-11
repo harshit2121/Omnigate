@@ -65,9 +65,11 @@ export default function OpdConfirmRxModal({
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
                 <span style={{ fontSize: 9, color: '#888', fontWeight: 'bold', textTransform: 'uppercase' }}>Diagnosis:</span>
-                <span style={{ fontWeight: 'bold', color: '#1A1A2E' }}>{selectedCase.intake?.complaintLabel || 'Amlapitta'}</span>
+                <span style={{ fontWeight: 'bold', color: '#1A1A2E' }}>
+                  {selectedCase.assessment?.confirmedDiagnosis?.name || selectedCase.intake?.chiefComplaint || selectedCase.intake?.complaintLabel || 'General Consultation'}
+                </span>
                 <span style={{ background: '#EFF5FF', border: '1px solid #B0C8E0', color: '#003F6B', padding: '1px 7px', fontSize: 9, fontFamily: 'monospace', borderRadius: 2 }}>
-                  {selectedCase.intake?.namasteCode || 'NAMASTE-AYU-AML-01'}
+                  {selectedCase.assessment?.confirmedDiagnosis?.namasteCode || selectedCase.intake?.namasteCode || 'AYU-GEN-01'}
                 </span>
               </div>
             </div>

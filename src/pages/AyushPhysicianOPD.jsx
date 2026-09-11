@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Volume2 } from 'lucide-react';
-import { OPD_DEMO_CASES } from '../data/opdDemoCases';
+import { supabaseOpdService } from '../services/supabaseOpdService';
 import { printDoctorPrescription } from '../utils/prakritiPdfGenerator';
 import { ayushCdssService } from '../services/ayushCdssService';
 import { AYUSH_NAMASTE_CATALOG } from '../services/clinicalAiService';
@@ -11,13 +11,12 @@ import { runDashavidhaEvaluation } from '../services/dashavidhaParikshaEngine';
 import { calculateCcrasPrakriti } from '../services/prakritiDetermineService';
 import voiceAssistant from '../services/voiceAssistant';
 
-// Modular AYUSH OPD Subcomponents (SOAP Clinical Architecture)
+// Modular AYUSH OPD Subcomponents (3-Phase Classical Ayurvedic Architecture)
 import OpdQueueRoster from '../components/ayush-opd/OpdQueueRoster';
 import OpdEncounterHeader from '../components/ayush-opd/OpdEncounterHeader';
-import OpdSubjectiveTab from '../components/ayush-opd/tabs/OpdSubjectiveTab';
-import OpdObjectiveTab from '../components/ayush-opd/tabs/OpdObjectiveTab';
-import OpdAssessmentTab from '../components/ayush-opd/tabs/OpdAssessmentTab';
-import OpdPlanTab from '../components/ayush-opd/tabs/OpdPlanTab';
+import OpdRogiParikshaTab from '../components/ayush-opd/tabs/OpdRogiParikshaTab';
+import OpdRogaParikshaTab from '../components/ayush-opd/tabs/OpdRogaParikshaTab';
+import OpdChikitsaPlanTab from '../components/ayush-opd/tabs/OpdChikitsaPlanTab';
 import OpdPatientSummaryTab from '../components/ayush-opd/tabs/OpdPatientSummaryTab';
 
 // Modular AYUSH OPD Modals
@@ -29,7 +28,7 @@ import OpdFhirModal from '../components/ayush-opd/modals/OpdFhirModal';
 
 export default function AyushPhysicianOPD() {
   // Search & Patient Retrieval
-  const [searchQuery, setSearchQuery] = useState('AYU-104');
+  const [searchQuery, setSearchQuery] = useState('');
   const [queue, setQueue] = useState([]);
   const [selectedCase, setSelectedCase] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -41,8 +40,8 @@ export default function AyushPhysicianOPD() {
   // Two-view navigation: 'roster' → full-screen queue, 'encounter' → clinical workstation
   const [currentView, setCurrentView] = useState('roster');
 
-  // Hospital HIS Workbench Navigation Tabs - SOAP Clinical Flow
-  const [hisActiveTab, setHisActiveTab] = useState('soap_subjective'); 
+  // Hospital HIS Workbench Navigation Tabs - 3-Phase Classical Flow
+  const [hisActiveTab, setHisActiveTab] = useState('phase1_rogi'); 
 
   // Doctor SOAP Clinical Notes & Overrides
   const [doctorSubjectiveNotes, setDoctorSubjectiveNotes] = useState('');
@@ -82,20 +81,16 @@ export default function AyushPhysicianOPD() {
   // Interlinked Prescribing State & Workflow
   const [prescribeMode, setPrescribeMode] = useState('regimen');
   const [regimenSearchQuery, setRegimenSearchQuery] = useState('');
-  const [activeRegimenName, setActiveRegimenName] = useState('Amlapitta Shamak Protocol (मानक प्रोटोकॉल)');
+  const [activeRegimenName, setActiveRegimenName] = useState('');
   const [dietPathya, setDietPathya] = useState('Warm fresh food, Mudga Yusha (Moong dal soup), Dadima (Pomegranate), Cow Ghee, Lukewarm water.');
   const [dietApathya, setDietApathya] = useState('Excessive spicy, sour, fermented food, curd at night, deep-fried snacks, late-night meals.');
   const [yogaPlanText, setYogaPlanText] = useState('Shitali & Sitkari Pranayama (10 min), Vajrasana post-meal, Bhujangasana, Nadi Shodhana.');
   const [showConfirmRxModal, setShowConfirmRxModal] = useState(false);
   const [isPrescriptionSigned, setIsPrescriptionSigned] = useState(false);
 
-  // Active Prescriptions State for Current Case
+  // Active Prescriptions State for Current Case (Starts unprescribed / empty for doctor entry)
   const [prescribingSystem, setPrescribingSystem] = useState('ayurvedic');
-  const [prescriptions, setPrescriptions] = useState([
-    { id: 1, name: 'Sutshekhar Ras (Gold / Plain)', type: 'Rasaushadhi / Vati', system: 'ayurvedic', dose: '250mg', frequency: 'BD (Twice Daily)', kaala: 'Pragbhakta (Before Meals)', anupana: 'Godugdha (Warm Cow Milk)', duration: '15 Days', source: 'Standard Protocol' },
-    { id: 2, name: 'Avipattikar Churna', type: 'Churna', system: 'ayurvedic', dose: '5g', frequency: 'HS (Bedtime)', kaala: 'Nishikala (Night)', anupana: 'Ushnodaka (Lukewarm Water)', duration: '15 Days', source: 'Standard Protocol' },
-    { id: 3, name: 'Kamadudha Rasa (Moti Yukta)', type: 'Rasaushadhi / Pishti', system: 'ayurvedic', dose: '250mg', frequency: 'BD (Twice Daily)', kaala: 'Adhobhakta (After Meals)', anupana: 'Amalaki Swarasa / Water', duration: '15 Days', source: 'Standard Protocol' }
-  ]);
+  const [prescriptions, setPrescriptions] = useState([]);
 
   const [newMedForm, setNewMedForm] = useState({
     name: 'Sutshekhar Ras (Gold / Plain)',
@@ -113,12 +108,9 @@ export default function AyushPhysicianOPD() {
   const [patientCurrentMeds, setPatientCurrentMeds] = useState([]);
   const [patientPreviousMeds, setPatientPreviousMeds] = useState([]);
 
-  // Panchakarma & Procedure Orders
+  // Panchakarma & Procedure Orders (Starts unprescribed / empty for doctor entry)
   const [showPanchakarmaModal, setShowPanchakarmaModal] = useState(false);
-  const [panchakarmaOrders, setPanchakarmaOrders] = useState([
-    { id: 1, procedure: 'Mridu Virechana Karma', dravya: 'Eranda Taila + Triphala Kwath', sessions: '3 Days', time: 'Early Morning (Pratah Kala)', notes: 'Empty stomach with lukewarm water' },
-    { id: 2, procedure: 'Shirodhara (Cooling Head Drip)', dravya: 'Chandanadi / Ksheerabala Taila', sessions: '7 Sessions (45 min)', time: 'Evening (Sayam Kala)', notes: 'For Pitta-shamana & stress pacification' }
-  ]);
+  const [panchakarmaOrders, setPanchakarmaOrders] = useState([]);
 
   const [newPanchakarmaForm, setNewPanchakarmaForm] = useState({
     procedure: 'Janu Basti (Knee Oil Retention)',
@@ -153,28 +145,58 @@ export default function AyushPhysicianOPD() {
     return `SHA256:7F8B-${hex}-${selectedCase.uhid?.slice(-4) || '8942'}-AIIA`;
   }, [selectedCase, prescriptions, isPrescriptionSigned]);
 
-  // Initialize queue from localStorage or seeded default demo cases
+  // Initialize OPD Queue from Supabase Database and subscribe in real-time
   useEffect(() => {
-    const stored = localStorage.getItem('omni_kiosk_queue');
-    let loadedCases = OPD_DEMO_CASES;
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const combined = [...parsed];
-          OPD_DEMO_CASES.forEach(dc => {
-            if (!combined.some(c => c.token === dc.token || c.id === dc.id)) {
-              combined.push(dc);
-            }
-          });
-          loadedCases = combined;
-        }
-      } catch (e) {
-        console.error('Failed parsing queue:', e);
-      }
+    let isMounted = true;
+
+    // Flush any legacy mock cache from previous sessions to ensure 100% clean state
+    if (!localStorage.getItem('omni_supabase_ready_v1')) {
+      localStorage.removeItem('omni_kiosk_queue');
+      localStorage.removeItem('omni_kiosk_queue_version');
+      localStorage.setItem('omni_supabase_ready_v1', 'true');
     }
-    setQueue(loadedCases);
-    setSelectedCase(loadedCases[0]);
+
+    const loadLiveQueue = async () => {
+      const cases = await supabaseOpdService.fetchOpdQueue();
+      if (isMounted) {
+        setQueue(cases);
+        if (cases.length > 0) {
+          const initial = cases[0];
+          setSelectedCase(initial);
+          setPrescriptions(initial?.prescriptions || []);
+          setPanchakarmaOrders(initial?.panchakarmaOrders || []);
+          setConfirmedDiagnosis(initial?.assessment?.confirmedDiagnosis || null);
+          setIsPrescriptionSigned(Boolean(initial?.isPrescriptionSigned));
+          setDoctorSubjectiveNotes(initial?.clinicalNotes || '');
+        } else {
+          setSelectedCase(null);
+          setPrescriptions([]);
+          setPanchakarmaOrders([]);
+          setConfirmedDiagnosis(null);
+          setIsPrescriptionSigned(false);
+          setDoctorSubjectiveNotes('');
+        }
+      }
+    };
+
+    loadLiveQueue();
+
+    // Real-time synchronization: listen for new check-ins from MediKiosk or Reception
+    const unsubscribe = supabaseOpdService.subscribeToOpdQueue((freshQueue) => {
+      if (isMounted) {
+        setQueue(freshQueue);
+        setSelectedCase(prev => {
+          if (!prev) return freshQueue[0] || null;
+          const updated = freshQueue.find(c => c.id === prev.id);
+          return updated || prev;
+        });
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   const handleSearchPatient = () => {
@@ -199,6 +221,18 @@ export default function AyushPhysicianOPD() {
     }
   };
 
+  const handleSeedSamplePatient = async () => {
+    const newCase = await supabaseOpdService.seedOneSamplePatient();
+    if (newCase) {
+      setQueue(prev => [newCase, ...prev.filter(c => c.id !== newCase.id)]);
+      setSelectedCase(newCase);
+      setPrescriptions(newCase.prescriptions || []);
+      setPanchakarmaOrders(newCase.panchakarmaOrders || []);
+      setConfirmedDiagnosis(newCase.assessment?.confirmedDiagnosis || null);
+      voiceAssistant.playAudioCue('beep');
+    }
+  };
+
   // Evaluate Live CCRAS Standardized Prakriti Scale
   const ccrasPrakritiResult = useMemo(() => {
     if (!selectedCase) return null;
@@ -214,7 +248,7 @@ export default function AyushPhysicianOPD() {
   const cdssEvaluation = useMemo(() => {
     if (!selectedCase) return null;
     
-    const activeAllo = selectedCase.intake?.currentMedications || ['Telmisartan 40mg'];
+    const activeAllo = selectedCase.intake?.currentMedications || [];
 
     return ayushCdssService.evaluatePrescription(
       prescriptions,
@@ -239,11 +273,90 @@ export default function AyushPhysicianOPD() {
     }
   };
 
+  const [isSavingDb, setIsSavingDb] = useState(false);
+
+  // Save all clinical findings (Ashtavidha, Dashavidha, Nidana Panchaka, Chikitsa Plan, Rx, Panchakarma) to Supabase
+  const handleSaveConsultationToDb = async (showToast = true, chikitsaPlanOverride = null) => {
+    if (!selectedCase) return;
+    setIsSavingDb(true);
+    try {
+      const encounterId = selectedCase.id;
+      const patientId = selectedCase.patient?.id || selectedCase.patientId;
+      
+      const ashtavidha = selectedCase.rogiPariksha?.ashtavidha || selectedCase.pariksha?.ashtavidha || {};
+      const dashavidha = selectedCase.rogiPariksha?.dashavidha || selectedCase.pariksha?.dashavidha || {};
+      const rogaPariksha = selectedCase.rogaPariksha || {};
+      const activeChikitsaPlan = chikitsaPlanOverride || selectedCase.chikitsaPlan || {};
+
+      const dxName = typeof confirmedDiagnosis === 'string' 
+        ? confirmedDiagnosis 
+        : (confirmedDiagnosis?.name || selectedCase.assessment?.confirmedDiagnosis?.name || 'Amlapitta');
+      const dxNameHi = typeof confirmedDiagnosis === 'object' && confirmedDiagnosis?.nameHi 
+        ? confirmedDiagnosis.nameHi 
+        : (selectedCase.assessment?.confirmedDiagnosis?.nameHi || 'अम्लपित्त');
+      const namaste = typeof confirmedDiagnosis === 'object' && confirmedDiagnosis?.namasteCode
+        ? confirmedDiagnosis.namasteCode
+        : (selectedCase.assessment?.namasteCode || 'AYU-AML-01');
+      const icd11 = typeof confirmedDiagnosis === 'object' && confirmedDiagnosis?.icd11Code
+        ? confirmedDiagnosis.icd11Code
+        : (selectedCase.assessment?.icd11Code || 'DA24.Z');
+
+      // 1. Save Consultation record (Ashtavidha, Dashavidha, Nidana Panchaka, Chikitsa Plan)
+      await supabaseOpdService.saveConsultation(encounterId, {
+        patientId,
+        ashtavidha,
+        dashavidha,
+        notes: doctorSubjectiveNotes || selectedCase.clinicalNotes,
+        assessmentNotes: doctorAssessmentNotes,
+        confirmedDiagnosis: dxName,
+        diagnosisNameHi: dxNameHi,
+        namasteCode: namaste,
+        icd11Code: icd11,
+        rogaPariksha,
+        chikitsaPlan: activeChikitsaPlan
+      });
+
+      // 2. Save Prescriptions table
+      if (prescriptions && prescriptions.length > 0) {
+        await supabaseOpdService.savePrescriptions(encounterId, prescriptions, patientId);
+      }
+
+      // 3. Save Panchakarma Orders table
+      if (panchakarmaOrders && panchakarmaOrders.length > 0) {
+        await supabaseOpdService.savePanchakarmaOrders(encounterId, panchakarmaOrders, patientId);
+      }
+
+      // Update in-memory selectedCase
+      setSelectedCase(prev => ({
+        ...prev,
+        chikitsaPlan: activeChikitsaPlan,
+        prescriptions,
+        panchakarmaOrders
+      }));
+
+      voiceAssistant.playAudioCue('success');
+
+      if (showToast) {
+        alert(`✓ रोगी ${selectedCase.patient?.name || ''} (UHID: ${selectedCase.uhid}) का अष्टविध परीक्षा, रोग परीक्षा एवं चतुर्विध चिकित्सा विधान Supabase Cloud Database में सफलतापूर्वक सुरक्षित हो गया है!`);
+      }
+    } catch (err) {
+      console.error('Failed saving encounter to Supabase:', err);
+      if (showToast) {
+        alert('डेटाबेस में सुरक्षित करते समय त्रुटि आई, कृपया पुनः प्रयास करें।');
+      }
+    } finally {
+      setIsSavingDb(false);
+    }
+  };
+
   const handleAcceptCase = async () => {
     if (!selectedCase) return;
     const consultedId = selectedCase.id;
     setAcceptedCases(prev => Array.from(new Set([...prev, consultedId])));
     
+    // Save all findings to Supabase before signing
+    await handleSaveConsultationToDb(false);
+
     const updatedCase = { ...selectedCase, status: 'CONSULTED' };
     setSelectedCase(updatedCase);
     setQueue(prev => {
@@ -256,6 +369,8 @@ export default function AyushPhysicianOPD() {
       }
       return next;
     });
+
+    await supabaseOpdService.signConsultation(consultedId, { hash: prescriptionHash });
 
     voiceAssistant.playAudioCue('success');
     
@@ -278,7 +393,56 @@ export default function AyushPhysicianOPD() {
     });
 
     setHisActiveTab('patient_summary');
-    alert(`Encounter ${selectedCase.token} (UHID: ${selectedCase.uhid}) signed and marked as CONSULTED in AIIA Central HIS!`);
+    alert(`Encounter ${selectedCase.token} (UHID: ${selectedCase.uhid}) signed and marked as CONSULTED in Central HIS & Supabase Cloud!`);
+  };
+
+  const handleConfirmDoctorDiagnosis = (dx, rogaData = null) => {
+    setConfirmedDiagnosis(dx);
+    if (rogaData?.samprapti) {
+      setActiveGhatakas(rogaData.samprapti);
+    }
+    if (selectedCase) {
+      const updatedCase = {
+        ...selectedCase,
+        assessment: {
+          ...(selectedCase.assessment || {}),
+          confirmedDiagnosis: dx,
+          ghatakas: rogaData?.samprapti || activeGhatakas
+        },
+        rogaPariksha: {
+          ...(selectedCase.rogaPariksha || {}),
+          ...(rogaData || {})
+        }
+      };
+      setSelectedCase(updatedCase);
+      setQueue(prev => prev.map(item => item.id === selectedCase.id ? updatedCase : item));
+      try {
+        localStorage.setItem('omni_active_opd_case', JSON.stringify(updatedCase));
+      } catch (e) {
+        console.error('Failed saving confirmed diagnosis case:', e);
+      }
+
+      // Proactively sync diagnosis to Supabase
+      const dxName = typeof dx === 'string' ? dx : (dx?.name || 'Amlapitta');
+      const dxNameHi = typeof dx === 'object' && dx?.nameHi ? dx.nameHi : (dx || 'अम्लपित्त');
+      const namaste = typeof dx === 'object' && dx?.namasteCode ? dx.namasteCode : 'AYU-AML-01';
+      const icd11 = typeof dx === 'object' && dx?.icd11Code ? dx.icd11Code : 'DA24.Z';
+      
+      supabaseOpdService.saveConsultation(selectedCase.id, {
+        patientId: selectedCase.patient?.id || selectedCase.patientId,
+        ashtavidha: selectedCase.rogiPariksha?.ashtavidha || selectedCase.pariksha?.ashtavidha || {},
+        dashavidha: selectedCase.rogiPariksha?.dashavidha || selectedCase.pariksha?.dashavidha || {},
+        notes: doctorSubjectiveNotes || selectedCase.clinicalNotes,
+        assessmentNotes: doctorAssessmentNotes,
+        confirmedDiagnosis: dxName,
+        diagnosisNameHi: dxNameHi,
+        namasteCode: namaste,
+        icd11Code: icd11,
+        rogaPariksha: rogaData || selectedCase.rogaPariksha || {},
+        chikitsaPlan: selectedCase.chikitsaPlan || {}
+      });
+    }
+    voiceAssistant.playAudioCue('success');
   };
 
   const handleOverrideGhataka = (ghatakaKey, newValue) => {
@@ -552,23 +716,21 @@ export default function AyushPhysicianOPD() {
     setQueue(prev => prev.map(item => item.id === selectedCase.id ? updatedCase : item));
     setShowVitalsModal(false);
     voiceAssistant.playAudioCue('success');
-  };
 
-  const handleConfirmDoctorDiagnosis = (confirmed, ghatakas) => {
-    setConfirmedDiagnosis(confirmed);
-    if (ghatakas) setActiveGhatakas(ghatakas);
-    if (selectedCase) {
-      const updatedCase = {
-        ...selectedCase,
-        assessment: {
-          ...(selectedCase.assessment || {}),
-          confirmedDiagnosis: confirmed,
-          ghatakas: ghatakas || selectedCase.assessment?.ghatakas
-        }
-      };
-      setSelectedCase(updatedCase);
-      setQueue(prev => prev.map(item => item.id === selectedCase.id ? updatedCase : item));
-    }
+    // Sync updated vitals & ashtavidha nadi to Supabase
+    supabaseOpdService.saveConsultation(selectedCase.id, {
+      patientId: selectedCase.patient?.id || selectedCase.patientId,
+      ashtavidha: updatedPariksha.ashtavidha,
+      dashavidha: selectedCase.rogiPariksha?.dashavidha || selectedCase.pariksha?.dashavidha || {},
+      notes: doctorSubjectiveNotes || selectedCase.clinicalNotes,
+      assessmentNotes: doctorAssessmentNotes,
+      confirmedDiagnosis: typeof confirmedDiagnosis === 'string' ? confirmedDiagnosis : (confirmedDiagnosis?.name || 'Amlapitta'),
+      diagnosisNameHi: typeof confirmedDiagnosis === 'object' && confirmedDiagnosis?.nameHi ? confirmedDiagnosis.nameHi : 'अम्लपित्त',
+      namasteCode: typeof confirmedDiagnosis === 'object' && confirmedDiagnosis?.namasteCode ? confirmedDiagnosis.namasteCode : 'AYU-AML-01',
+      icd11Code: typeof confirmedDiagnosis === 'object' && confirmedDiagnosis?.icd11Code ? confirmedDiagnosis.icd11Code : 'DA24.Z',
+      rogaPariksha: selectedCase.rogaPariksha || {},
+      chikitsaPlan: selectedCase.chikitsaPlan || {}
+    });
   };
 
   const handleAddPanchakarmaOrder = () => {
@@ -587,6 +749,10 @@ export default function AyushPhysicianOPD() {
     const consultedId = selectedCase.id;
     setIsPrescriptionSigned(true);
     setShowConfirmRxModal(false);
+
+    // Persist all findings into Supabase tables first
+    await handleSaveConsultationToDb(false);
+    await supabaseOpdService.signConsultation(consultedId, { hash: prescriptionHash });
 
     const updatedCase = { ...selectedCase, status: 'CONSULTED' };
     setSelectedCase(updatedCase);
@@ -731,11 +897,16 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
     setSearchQuery(c.token);
     setEditedNotes('');
     setCurrentView('encounter');
-    setPatientPrakritiAnswers(c.pariksha?.ccrasAnswers || c.pariksha?.prakritiAnswers || {});
+    setHisActiveTab('phase1_rogi');
+    setPatientPrakritiAnswers(c.pariksha?.ccrasAnswers || c.rogiPariksha?.dashavidha?.prakriti?.scores || {});
     setConfirmedDiagnosis(c.assessment?.confirmedDiagnosis || null);
-    setActiveGhatakas(c.assessment?.ghatakas || null);
+    setActiveGhatakas(c.assessment?.ghatakas || c.rogaPariksha?.samprapti || null);
     setDoctorSubjectiveNotes(c.notes?.subjective || '');
     setDoctorAssessmentNotes(c.notes?.assessment || '');
+    setPrescriptions(c.prescriptions || []);
+    setPanchakarmaOrders(c.panchakarmaOrders || []);
+    setActiveRegimenName(c.activeRegimenName || '');
+    setIsPrescriptionSigned(c.isPrescriptionSigned || false);
 
     setQueue(prev => {
       const next = prev.map(item => {
@@ -755,6 +926,8 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
       }
       return next;
     });
+
+    supabaseOpdService.updateEncounterStatus(c.id, 'IN_CONSULTATION');
   };
 
   const backToRoster = () => {
@@ -764,51 +937,60 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
   return (
     <div className="bg-slate-100 min-h-screen text-slate-800" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif', fontSize: '13px' }}>
 
-      {/* Physician Sub-Header Ribbon */}
-      <div style={{ background: '#003F6B', borderBottom: '3px solid #FF6B00', color: 'white' }}>
-        <div className="max-w-screen-xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span style={{ background: '#FF6B00', color: 'white', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold', borderRadius: '2px' }}>
-              AYUSH OPD
-            </span>
-            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#FFD700' }}>
-              Physician Clinical Workstation (आयुष बाह्य रोगी विभाग)
-            </span>
-            <span style={{ color: '#90AAC4', fontSize: '12px' }}>• OPD Room 12 (Unit III)</span>
-          </div>
+      {/* Physician Sub-Header Ribbon - Master OPD Queue View */}
+      {currentView === 'roster' && (
+        <div className="bg-slate-900 border-b border-slate-800 text-white shadow-sm">
+          <div className="max-w-screen-xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-md text-[11px] font-black tracking-wider uppercase">
+                AYUSH OPD
+              </span>
+              <span className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                Physician Clinical Workstation <span className="text-slate-400 font-normal text-xs hidden md:inline">(आयुष बाह्य रोगी विभाग)</span>
+              </span>
+              <span className="text-slate-400 text-xs font-medium bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60">
+                Room 12 • Unit III
+              </span>
+              {supabaseOpdService.isLive() ? (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-700/60 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Supabase DB Live
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-950/70 text-blue-300 border border-blue-700/60 flex items-center gap-1" title="To connect live Supabase, enter VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                  Supabase Ready (Local Mode)
+                </span>
+              )}
+            </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <div style={{ fontSize: '11px', color: '#D6E4F0' }}>
-              Attending: <b style={{ color: 'white' }}>Dr. V. Sharma</b> (BAMS, MD) • Reg: <span style={{ fontFamily: 'monospace', color: '#90C8FF' }}>CCIM-84920</span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="text-xs text-slate-300 flex items-center gap-1.5">
+                <span>Attending:</span>
+                <strong className="text-white font-semibold">Dr. V. Sharma</strong>
+                <span className="text-slate-500">•</span>
+                <span className="font-mono text-[11px] text-indigo-300 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/50">CCIM-84920</span>
+              </div>
+              <div className="w-px h-4 bg-slate-700 hidden sm:block" />
+              <div className="text-xs flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-md bg-amber-950/40 text-amber-300 font-bold border border-amber-800/50 text-[11px]">
+                  {queue.filter(c => !acceptedCases.includes(c.id)).length} Waiting
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-400 font-bold border border-emerald-800/50 text-[11px]">
+                  {acceptedCases.length} Done
+                </span>
+              </div>
+              <button
+                onClick={handleCallNextToken}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 border border-orange-500 shadow-sm shadow-orange-900/30 transition-all active:scale-95 cursor-pointer"
+              >
+                <Volume2 size={13} />
+                Announce Next
+              </button>
             </div>
-            <div style={{ width: 1, height: 18, background: '#005A9C' }} />
-            <div style={{ fontSize: '11px', color: '#D6E4F0' }}>
-              Queue: <b style={{ color: '#FFD700' }}>{queue.filter(c => !acceptedCases.includes(c.id)).length} Waiting</b> | <b style={{ color: '#4ADE80' }}>{acceptedCases.length} Done</b>
-            </div>
-            <button
-              onClick={handleCallNextToken}
-              style={{
-                background: '#E05000',
-                border: '1px solid #C04000',
-                color: 'white',
-                padding: '5px 12px',
-                borderRadius: '2px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F06010'}
-              onMouseLeave={e => e.currentTarget.style.background = '#E05000'}
-            >
-              <Volume2 size={13} />
-              Announce Next
-            </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* VIEW 1: FULL-SCREEN OPD PATIENT QUEUE & MASTER ROSTER */}
       {currentView === 'roster' && (
@@ -825,7 +1007,34 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
           filteredQueue={filteredQueue}
           openPatientEncounter={openPatientEncounter}
           handleCallNextToken={handleCallNextToken}
+          onSeedSample={handleSeedSamplePatient}
         />
+      )}
+
+      {/* VIEW 2: FULL-SCREEN CLINICAL ENCOUNTER WORKSPACE */}
+      {currentView === 'encounter' && !selectedCase && (
+        <div className="max-w-screen-xl mx-auto px-4 py-16 text-center">
+          <div className="bg-white border border-slate-200 rounded-2xl p-10 max-w-md mx-auto shadow-sm space-y-4">
+            <h3 className="text-base font-bold text-slate-800">कतार रिक्त है • No Active Patient</h3>
+            <p className="text-xs text-slate-500">
+              ओपीडी कतार में कोई रोगी नहीं है। मेडीकियोस्क से नया पंजीकरण करें या टेस्ट केस लोड करें।
+            </p>
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setCurrentView('roster')}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors"
+              >
+                ← वापस ओपीडी कतार देखें
+              </button>
+              <button
+                onClick={handleSeedSamplePatient}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-300 cursor-pointer transition-colors"
+              >
+                ✨ Seed Test Patient
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* VIEW 2: FULL-SCREEN CLINICAL ENCOUNTER WORKSPACE */}
@@ -841,81 +1050,50 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
             handleOpenVitalsModal={handleOpenVitalsModal}
             hisActiveTab={hisActiveTab}
             setHisActiveTab={setHisActiveTab}
+            waitingCount={queue.filter(c => !acceptedCases.includes(c.id)).length}
+            prescriptions={prescriptions}
+            confirmedDiagnosis={confirmedDiagnosis}
+            onSaveConsultation={() => handleSaveConsultationToDb(true)}
+            isSavingDb={isSavingDb}
           />
 
-          {/* TAB 1: [S] SUBJECTIVE (लक्षण, इतिहास एवं आहार-विहार) */}
-          {hisActiveTab === 'soap_subjective' && (
-            <OpdSubjectiveTab
+          {/* PHASE 1: ROGI PARIKSHA (रोगी परीक्षा — आप्तोपदेश, प्रत्यक्ष एवं अनुमान: अष्टविध व दशविध) */}
+          {(hisActiveTab === 'phase1_rogi' || hisActiveTab === 'soap_subjective' || hisActiveTab === 'soap_objective') && (
+            <OpdRogiParikshaTab
               selectedCase={selectedCase}
               doctorNotes={doctorSubjectiveNotes}
               onUpdateDoctorNotes={setDoctorSubjectiveNotes}
-            />
-          )}
-
-          {/* TAB 2: [O] OBJECTIVE (परीक्षा, अष्टविध एवं CCRAS प्रकृति) */}
-          {hisActiveTab === 'soap_objective' && (
-            <OpdObjectiveTab
-              selectedCase={selectedCase}
-              patientPrakritiAnswers={patientPrakritiAnswers}
-              onUpdatePrakritiAnswers={setPatientPrakritiAnswers}
-              onConfirmDoctorPrakriti={handleConfirmDoctorPrakriti}
               handleOpenVitalsModal={handleOpenVitalsModal}
             />
           )}
 
-          {/* TAB 3: [A] ASSESSMENT (सम्प्राप्ति घटक, निदान एवं NAMASTE/ICD-11) */}
-          {hisActiveTab === 'soap_assessment' && (
-            <OpdAssessmentTab
+          {/* PHASE 2: ROGA PARIKSHA (रोग परीक्षा — निदान पंचक एवं सम्प्राप्ति घटक) */}
+          {(hisActiveTab === 'phase2_roga' || hisActiveTab === 'soap_assessment') && (
+            <OpdRogaParikshaTab
               selectedCase={selectedCase}
               assessmentNotes={doctorAssessmentNotes}
               onUpdateAssessmentNotes={setDoctorAssessmentNotes}
-              doctorSubjectiveNotes={doctorSubjectiveNotes}
-              ccrasPrakritiResult={ccrasPrakritiResult}
               confirmedDiagnosis={confirmedDiagnosis}
-              setConfirmedDiagnosis={setConfirmedDiagnosis}
-              activeGhatakas={activeGhatakas}
-              setActiveGhatakas={setActiveGhatakas}
               onConfirmDoctorDiagnosis={handleConfirmDoctorDiagnosis}
-              onOverrideGhataka={handleOverrideGhataka}
             />
           )}
 
-          {/* TAB 4: [P] PLAN & RX (चिकित्सा सूत्र, औषध योग एवं पथ्यापथ्य) */}
-          {hisActiveTab === 'soap_plan' && (
-            <OpdPlanTab
+          {/* PHASE 3: CHIKITSA SUTRA & PLAN (चिकित्सा योजना — आहार, विहार, शमन एवं शोधन) */}
+          {(hisActiveTab === 'phase3_chikitsa' || hisActiveTab === 'soap_plan') && (
+            <OpdChikitsaPlanTab
               selectedCase={selectedCase}
-              confirmedDiagnosis={confirmedDiagnosis}
-              activeGhatakas={activeGhatakas}
-              doctorSubjectiveNotes={doctorSubjectiveNotes}
-              doctorAssessmentNotes={doctorAssessmentNotes}
-              ccrasPrakritiResult={ccrasPrakritiResult}
-              isPrescriptionSigned={isPrescriptionSigned}
-              cdssEvaluation={cdssEvaluation}
               prescriptions={prescriptions}
               setPrescriptions={setPrescriptions}
-              handleAddPrescription={handleAddPrescription}
-              handleRemovePrescription={handleRemovePrescription}
-              newMedForm={newMedForm}
-              setNewMedForm={setNewMedForm}
-              prescribingSystem={prescribingSystem}
-              setPrescribingSystem={setPrescribingSystem}
-              dietPathya={dietPathya}
-              setDietPathya={setDietPathya}
-              dietApathya={dietApathya}
-              setDietApathya={setDietApathya}
-              yogaPlanText={yogaPlanText}
-              setYogaPlanText={setYogaPlanText}
               panchakarmaOrders={panchakarmaOrders}
               setPanchakarmaOrders={setPanchakarmaOrders}
-              setShowPanchakarmaModal={setShowPanchakarmaModal}
-              setShowConfirmRxModal={setShowConfirmRxModal}
               setShowApiImportModal={setShowApiImportModal}
-              printDoctorPrescription={printDoctorPrescription}
+              setShowPanchakarmaModal={setShowPanchakarmaModal}
+              onSaveChikitsaPlan={(compiledPlan) => handleSaveConsultationToDb(true, compiledPlan)}
             />
           )}
 
-          {/* TAB 5: [SUMMARY & E-SIGN] (रोगी परामर्श पत्र एवं अधिकृत प्रिंट) */}
-          {hisActiveTab === 'patient_summary' && (
+          {/* PHASE 4: OFFICIAL E-SIGN (परामर्श पत्र एवं अधिकृत प्रिंट) */}
+          {(hisActiveTab === 'phase4_summary' || hisActiveTab === 'patient_summary') && (
             <OpdPatientSummaryTab
               selectedCase={selectedCase}
               confirmedDiagnosis={confirmedDiagnosis}
@@ -923,6 +1101,7 @@ ATTENDING VAIDYA: Dr. V. Sharma (BAMS, MD Ayu) • Senior Consultant • Reg No:
               isPrescriptionSigned={isPrescriptionSigned}
               acceptedCases={acceptedCases}
               ccrasPrakritiResult={ccrasPrakritiResult}
+              sampraptiSynthesis={null}
               prescriptions={prescriptions}
               dietPathya={dietPathya}
               yogaPlanText={yogaPlanText}
