@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Flame, Droplets, Wind, Activity, 
@@ -6,7 +6,7 @@ import {
   Share2, Volume2, ShieldCheck, Sparkles,
   ChevronRight, ChevronLeft, Award, RotateCcw,
   Check, Info, X, Compass, HeartPulse, FileText,
-  ArrowRight, Shield, Clock, BookOpen
+  ArrowRight, Shield, Clock, BookOpen, BrainCircuit
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -16,6 +16,7 @@ import {
   CCRAS_PRAKRITI_GUIDELINES, 
   calculateCcrasPrakriti 
 } from '../../services/prakritiDetermineService';
+import { ayushAiCopilotService } from '../../services/ayushAiCopilotService';
 import { printPrakritiDietPlan } from '../../utils/prakritiPdfGenerator';
 import voiceAssistant from '../../services/voiceAssistant';
 import AyushTraitVisual from './AyushTraitVisuals';
@@ -50,12 +51,50 @@ export default function AyushParikshaModule({
     intakeData?.complaintId ? 'nidan_adaptive' : 'ccras_full'
   );
 
+  // Dynamic Gemini AI Curation State
+  const [aiCuration, setAiCuration] = useState(null);
+  const [isLoadingAiCuration, setIsLoadingAiCuration] = useState(false);
+
+  // Live AI Consultation Curation Effect
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingAiCuration(true);
+
+    ayushAiCopilotService.curateAiPrakritiQuestions({
+      chiefComplaint: intakeData?.complaintLabel || intakeData?.complaintLabelHi || '',
+      complaintId: intakeData?.complaintId || '',
+      hpiAnswers: intakeData?.answers || {},
+      currentMedications: intakeData?.currentMedications || [],
+      previousMedications: intakeData?.previousMedications || [],
+      pastConditions: intakeData?.pastConditions || [],
+      patientAge: patientData?.age || 40,
+      patientGender: patientData?.gender || 'Male',
+      currentLang
+    }).then(res => {
+      if (isMounted && res) {
+        setAiCuration(res);
+        setIsLoadingAiCuration(false);
+      }
+    }).catch(err => {
+      console.warn('AI Prakriti curation error:', err);
+      if (isMounted) setIsLoadingAiCuration(false);
+    });
+
+    return () => { isMounted = false; };
+  }, [intakeData?.complaintId, intakeData?.complaintLabel, intakeData?.currentMedications, currentLang]);
+
   const questionsList = useMemo(() => {
     if (assessmentMode === 'nidan_adaptive') {
-      return CCRAS_PRAKRITI_QUESTIONS.filter(q => NIDAN_AI_ADAPTIVE_QUESTION_IDS.includes(q.id));
+      const activeIds = (aiCuration && Array.isArray(aiCuration.selectedQuestionIds) && aiCuration.selectedQuestionIds.length > 0)
+        ? aiCuration.selectedQuestionIds
+        : NIDAN_AI_ADAPTIVE_QUESTION_IDS;
+
+      return activeIds
+        .map(id => CCRAS_PRAKRITI_QUESTIONS.find(q => q.id === id))
+        .filter(Boolean);
     }
     return CCRAS_PRAKRITI_QUESTIONS;
-  }, [assessmentMode]);
+  }, [assessmentMode, aiCuration]);
   
   // Navigation & View States
   // 'questions' = Unbiased question answering screen (NO Dosha reveal)
@@ -146,48 +185,78 @@ export default function AyushParikshaModule({
     <div className="space-y-6 font-sans">
 
       {/* ========================================================================= */}
-      {/* 1. PRESTIGIOUS GOVT OF INDIA & CCRAS CERTIFIED KIOSK HEADER               */}
+      {/* 1. PRESTIGIOUS CCRAS & DR. SUMENDRA MISHRA CLINICAL KIOSK HEADER          */}
       {/* ========================================================================= */}
-      <div className="bg-gradient-to-r from-[#062444] via-[#0B4C8C] to-[#0A3866] text-white p-5 sm:p-7 rounded-3xl shadow-xl border-2 border-[#165a9e] relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-          {/* Official Emblem & Credentials */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-20 sm:w-18 sm:h-22 bg-white/95 rounded-2xl p-2 flex items-center justify-center shadow-lg shrink-0 border border-white/40">
-              <img 
-                src="/Emblem_of_India.svg" 
-                alt="National Emblem of India" 
-                className="w-full h-full object-contain"
-              />
+      <div className="bg-gradient-to-r from-[#041D38] via-[#0B4C8C] to-[#082E56] text-white p-5 sm:p-7 rounded-3xl shadow-xl border-2 border-[#165a9e] relative overflow-hidden">
+        {/* Subtle luminous ambient backdrop */}
+        <div className="absolute -right-10 -top-10 w-60 h-60 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-1/3 -bottom-12 w-44 h-44 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          {/* Dual Official Branding: National Emblem + NIDAAN AI */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="w-14 h-18 sm:w-16 sm:h-20 bg-white rounded-2xl p-2 flex items-center justify-center shadow-md border border-white/40 shrink-0">
+                <img 
+                  src="/Emblem_of_India.svg" 
+                  alt="National Emblem of India" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="w-14 h-18 sm:w-16 sm:h-20 bg-white rounded-2xl p-2 flex items-center justify-center shadow-md border border-white/40 shrink-0">
+                <img 
+                  src="/nidaan_ai_mark.png" 
+                  alt="NIDAAN AI" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => { e.currentTarget.src = '/nidaan_ai_logo.png'; }}
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="bg-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-xs border border-amber-300">
                   <ShieldCheck size={13} className="text-slate-950" />
-                  CCRAS Certified • सीसीआरएएस मानक
+                  <span>CCRAS Certified • सीसीआरएएस मानक</span>
                 </Badge>
-                <Badge className="bg-white/15 text-blue-100 border border-white/20 text-[11px] font-bold px-2.5 py-0.5">
+                
+                <Badge className="bg-sky-400/25 text-sky-200 border border-sky-300/40 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-xs backdrop-blur-xs">
+                  <Sparkles size={13} className="text-cyan-300 animate-pulse" />
+                  <span>NIDAAN AI Assisted • एआई समर्थित</span>
+                </Badge>
+
+                <Badge className="bg-white/15 text-blue-100 border border-white/20 text-[10px] font-bold px-2 py-0.5 rounded-md">
                   ISBN: 978-93-83864-21-8
                 </Badge>
               </div>
 
-              <h2 
-                className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2"
-                style={{ fontFamily: "'Fraunces', serif" }}
-              >
-                <span>{isHi ? 'आयुष मानकीकृत प्रकृति निर्धारण' : 'Ayush Standardized Prakriti Assessment'}</span>
-              </h2>
+              <div>
+                <h2 
+                  className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2"
+                  style={{ fontFamily: "'Fraunces', serif" }}
+                >
+                  <span>{isHi ? 'आयुष मानकीकृत प्रकृति निर्धारण' : 'Ayush Standardized Prakriti Assessment'}</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-amber-300 font-extrabold tracking-wide mt-0.5 flex items-center gap-1.5">
+                  <BookOpen size={14} className="text-amber-300 shrink-0" />
+                  <span>
+                    {isHi 
+                      ? 'डॉ. सुमेंद्र मिश्रा परामर्श पद्धति (Dr. Sumendra Mishra Consultation Method) — CCRAS दिशानिर्देशों पर आधारित'
+                      : 'Dr. Sumendra Mishra Consultation Method — Standardized on Guidelines of CCRAS'}
+                  </span>
+                </p>
+              </div>
 
-              <p className="text-xs sm:text-sm text-blue-100/90 max-w-2xl font-medium leading-relaxed">
+              <p className="text-xs text-blue-100/90 max-w-2xl font-medium leading-relaxed">
                 {isHi 
-                  ? 'केन्द्रीय आयुर्वेदीय विज्ञान अनुसंधान परिषद (CCRAS), आयुष मंत्रालय, भारत सरकार के मानकीकृत नैदानिक मापदंडों पर आधारित परीक्षा।'
-                  : 'Central Council for Research in Ayurvedic Sciences (CCRAS), Ministry of AYUSH, Govt of India - Clinical Parameters.'}
+                  ? 'केन्द्रीय आयुर्वेदीय विज्ञान अनुसंधान परिषद (CCRAS), आयुष मंत्रालय, भारत सरकार के मानकीकृत नैदानिक मापदंडों एवं NIDAAN AI न्यूरल इंजन द्वारा संचालित सटीक प्रकृति विश्लेषण।'
+                  : 'Clinical assessment following CCRAS Standardized Parameters (Ministry of AYUSH, Govt of India) & Dr. Sumendra Mishra methodology with NIDAAN AI Neural Analysis.'}
               </p>
             </div>
           </div>
 
           {/* Quick Actions / Certified Result CTAs */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             {answeredInMode > 0 && (
               <Button
                 variant="outline"
@@ -233,7 +302,7 @@ export default function AyushParikshaModule({
                 }`}
               >
                 <NidanAiLogo size={14} />
-                <span>{isHi ? 'निदान AI त्वरित (10 प्रश्न - 3 मिनट)' : 'NIDAAN AI Quick (10 Qs)'}</span>
+                <span>{isHi ? 'NIDAAN AI समर्थित त्वरित (10 प्रश्न - 3 मिनट)' : 'NIDAAN AI Assisted Quick (10 Qs)'}</span>
               </button>
               <button
                 type="button"
@@ -257,8 +326,8 @@ export default function AyushParikshaModule({
             <span className="text-[11px] text-emerald-200 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-1 rounded-xl flex items-center gap-1">
               <CheckCircle2 size={12} className="text-emerald-400" />
               {isHi 
-                ? `लक्षण "${intakeData.complaintLabel}" हेतु अनुकूलित (सटीक व त्वरित)` 
-                : `Tailored for "${intakeData.complaintLabel}"`}
+                ? `लक्षण "${intakeData.complaintLabel}" हेतु NIDAAN AI द्वारा अनुकूलित` 
+                : `AI-Adapted for "${intakeData.complaintLabel}"`}
             </span>
           )}
         </div>
@@ -329,6 +398,52 @@ export default function AyushParikshaModule({
               </button>
             </div>
           </div>
+
+          {/* NIDAAN AI Live Clinical Decision Support Strip */}
+          {assessmentMode === 'nidan_adaptive' && (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-sky-900/10 via-amber-500/10 to-teal-900/10 border border-sky-300/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shrink-0 shadow-xs border border-sky-400/40 p-1">
+                  <NidanAiLogo size={20} />
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-sky-900 bg-sky-100 px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1">
+                      <Sparkles size={11} className="text-sky-600" />
+                      <span>{isHi ? 'NIDAAN AI नैदानिक निर्णय समर्थन' : 'NIDAAN AI Clinical Decision Support'}</span>
+                    </span>
+                    {aiCuration?.doshaFocus && (
+                      <span className="text-[11px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200">
+                        {isHi ? `लक्षित दोष: ${aiCuration.doshaFocus}` : `Target Focus: ${aiCuration.doshaFocus}`}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-500 font-bold hidden md:inline">
+                      • Dr. Sumendra Mishra Method (CCRAS)
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-700 leading-snug">
+                    {isLoadingAiCuration ? (
+                      <span className="flex items-center gap-1.5 text-sky-700 font-bold animate-pulse">
+                        <Activity size={12} className="animate-spin" />
+                        {isHi ? 'NIDAAN AI मुख्य लक्षणों एवं दवाओं के आधार पर प्रश्न विश्लेषण कर रहा है...' : 'NIDAAN AI analyzing chief complaints and medications for targeted parameters...'}
+                      </span>
+                    ) : (
+                      isHi 
+                        ? (aiCuration?.aiReasoningHi || 'मरीज की मुख्य समस्या, दवाओं व जीवनशैली के आधार पर NIDAAN AI ने इन 10 प्राथमिक मापदंडों का चयन किया है।')
+                        : (aiCuration?.aiReasoningEn || 'NIDAAN AI dynamically selected these 10 high-yield clinical parameters based on patient chief complaints and medications.')
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="shrink-0 self-end sm:self-center">
+                <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                  <CheckCircle2 size={11} className="text-emerald-600" />
+                  <span>{aiCuration?.source || 'Gemini Neural Live'}</span>
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Question Title & Subtext */}
           <div className="space-y-1.5">
@@ -475,19 +590,24 @@ export default function AyushParikshaModule({
           {/* Certificate Header Banner */}
           <div className="bg-gradient-to-r from-amber-50 via-sky-50 to-emerald-50 border-2 border-amber-200/80 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-20 bg-white rounded-2xl p-2 shadow-md border border-amber-200 shrink-0 flex items-center justify-center">
+              <div className="flex items-center gap-3.5">
+                <div className="w-14 h-18 bg-white rounded-2xl p-2 shadow-md border border-amber-200 shrink-0 flex items-center justify-center">
                   <img src="/Emblem_of_India.svg" alt="Emblem" className="w-full h-full object-contain" />
+                </div>
+                <div className="w-14 h-18 bg-white rounded-2xl p-2 shadow-md border border-sky-200 shrink-0 flex items-center justify-center">
+                  <img src="/nidaan_ai_mark.png" alt="NIDAAN AI" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = '/nidaan_ai_logo.png'; }} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className="bg-[#0B4C8C] text-white text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 flex items-center gap-1.5">
-                      {assessmentMode === 'nidan_adaptive' && <NidanAiLogo size={12} />}
-                      <span>{assessmentMode === 'nidan_adaptive' ? 'NIDAAN AI Adaptive CCRAS' : 'CCRAS Certified Assessment'}</span>
+                      <NidanAiLogo size={12} />
+                      <span>{assessmentMode === 'nidan_adaptive' ? 'NIDAAN AI Assisted CCRAS' : 'CCRAS Certified Assessment'}</span>
+                    </Badge>
+                    <Badge className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                      Dr. Sumendra Mishra Method
                     </Badge>
                     <span className="text-xs font-bold text-slate-500">
                       • {answeredInMode} / {questionsList.length} {isHi ? 'मापदंडों पर आधारित' : 'Parameters Recorded'}
-                      {assessmentMode === 'nidan_adaptive' && ` (${isHi ? '10 उच्च-सटीक लक्षण' : '10 high-yield traits'})`}
                     </span>
                   </div>
                   <h3 

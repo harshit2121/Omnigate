@@ -34,10 +34,11 @@ export default function ConversationalIntakeStep({
   const [clinicalMode, setClinicalMode] = useState(intakeData.clinicalMode || 'ayush');
   const [activeIntakeTab, setActiveIntakeTab] = useState('hpi'); // 'hpi' | 'ai_inquiries' | 'past_history' | 'current_meds'
 
-  // Dynamic AI Clinical Inquiries for Kiosk Patient
-  const [kioskAiInquiries, setKioskAiInquiries] = useState([]);
+  // Dynamic AI Clinical Inquiries for Kiosk Patient (5 High-Yield Questions)
+  const [kioskAiInquiries, setKioskAiInquiries] = useState(intakeData.kioskAiInquiries || []);
   const [aiInquiriesResponse, setAiInquiriesResponse] = useState(intakeData.aiInquiriesResponse || {});
   const [isLoadingAiInquiries, setIsLoadingAiInquiries] = useState(false);
+  const [currentAiInqIndex, setCurrentAiInqIndex] = useState(0);
 
   // Past Clinical History & Medications State (Current + Previous, Modern + Ayurvedic)
   const [pastConditions, setPastConditions] = useState(intakeData.pastConditions || []);
@@ -75,6 +76,17 @@ export default function ConversationalIntakeStep({
     }
   }, [selectedComplaint, currentQIndex, currentLang, voiceEnabled, activeQuestions, activeIntakeTab]);
 
+  // Voice narration for NIDAAN AI Inquiries
+  useEffect(() => {
+    if (selectedComplaint && activeIntakeTab === 'ai_inquiries' && voiceEnabled && kioskAiInquiries.length > 0) {
+      const inq = kioskAiInquiries[currentAiInqIndex];
+      if (inq) {
+        const qText = currentLang === 'hi' ? inq.questionHi : inq.questionEn;
+        voiceAssistant.speak(qText);
+      }
+    }
+  }, [selectedComplaint, currentAiInqIndex, currentLang, voiceEnabled, kioskAiInquiries, activeIntakeTab]);
+
   const handleSelectDepartment = (dept) => {
     setSelectedDeptId(dept.id);
     voiceAssistant.playAudioCue('beep');
@@ -89,7 +101,12 @@ export default function ConversationalIntakeStep({
   const handleSelectComplaint = async (complaint) => {
     setSelectedComplaint(complaint.id);
     setIsLoadingQuestions(true);
+    setIsLoadingAiInquiries(true);
     setCurrentQIndex(0);
+    setCurrentAiInqIndex(0);
+
+    // AI immediately takes over clinical intake upon symptom selection
+    setActiveIntakeTab('ai_inquiries');
 
     setIntakeData(prev => ({
       ...prev,
@@ -106,47 +123,43 @@ export default function ConversationalIntakeStep({
 
     if (voiceEnabled) {
       const text = currentLang === 'hi'
-        ? `${complaint.hi} चुना गया। लक्षण विश्लेषण लोड हो रहा है...`
-        : `Selected ${complaint.label}. Loading clinical assessment...`;
+        ? `${complaint.hi} चुना गया। NIDAAN AI पूर्व-परामर्श मूल्यांकन शुरू हो रहा है...`
+        : `Selected ${complaint.label}. Starting NIDAAN AI clinical pre-consultation assessment...`;
       voiceAssistant.speak(text);
     }
 
     try {
-      const dynamicQs = await dynamicClinicalAiService.generateQuestionsForComplaint(
-        selectedDeptId,
-        complaint,
-        currentLang
-      );
-      setActiveQuestions(dynamicQs);
+      const [dynamicQs, inquiries] = await Promise.all([
+        dynamicClinicalAiService.generateQuestionsForComplaint(
+          selectedDeptId,
+          complaint,
+          currentLang
+        ),
+        ayushAiCopilotService.generateKioskInquiries({
+          chiefComplaint: complaint.label,
+          complaintId: complaint.id,
+          currentLang
+        })
+      ]);
 
-      // Also generate AI Clinical Inquiries for the patient
-      setIsLoadingAiInquiries(true);
-      ayushAiCopilotService.generateKioskInquiries({
-        chiefComplaint: complaint.label,
-        complaintId: complaint.id,
-        currentLang
-      }).then(inquiries => {
-        setKioskAiInquiries(inquiries);
-        setIntakeData(prev => ({
-          ...prev,
-          kioskAiInquiries: inquiries,
-          kioskInquiries: inquiries.map(item => ({
-            id: item.id,
-            questionHi: item.questionHi,
-            questionEn: item.questionEn,
-            patientAnswer: prev.aiInquiriesResponse?.[item.id]?.answer || null,
-            clinicalReason: item.clinicalReason
-          }))
-        }));
-        setIsLoadingAiInquiries(false);
-      }).catch(err => {
-        console.warn('Failed generating kiosk AI inquiries:', err);
-        setIsLoadingAiInquiries(false);
-      });
+      setActiveQuestions(dynamicQs);
+      setKioskAiInquiries(inquiries);
+      setIntakeData(prev => ({
+        ...prev,
+        kioskAiInquiries: inquiries,
+        kioskInquiries: inquiries.map(item => ({
+          id: item.id,
+          questionHi: item.questionHi,
+          questionEn: item.questionEn,
+          patientAnswer: prev.aiInquiriesResponse?.[item.id]?.answer || null,
+          clinicalReason: item.clinicalReason
+        }))
+      }));
     } catch (err) {
-      console.warn('Failed generating dynamic questions:', err);
+      console.warn('Failed generating dynamic questions / inquiries:', err);
     } finally {
       setIsLoadingQuestions(false);
+      setIsLoadingAiInquiries(false);
     }
   };
 
@@ -590,153 +603,350 @@ export default function ConversationalIntakeStep({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: NIDAAN AI CLINICAL INQUIRIES (AUTOMATICALLY GENERATED ON COMPLAINT) */}
+      {/* TAB 2: NIDAAN AI CLINICAL INQUIRIES (REDEVELOPED & PROMOTED)              */}
       {/* ========================================================================= */}
       {activeIntakeTab === 'ai_inquiries' && (
-        <NidanAiCard
-          badge="NIDAAN AI"
-          title={currentLang === 'hi' ? 'नैदानिक पूर्व-परामर्श पूछताछ (Clinical Inquiries)' : 'NIDAAN AI Clinical Pre-Consultation Inquiries'}
-          subtitle={currentLang === 'hi' ? 'आपकी मुख्य समस्या के आधार पर उत्पन्न प्रश्न — आपके उत्तर सीधे डॉक्टर के ओपीडी स्क्रीन पर दिखाई देंगे।' : 'Diagnostic inquiries tailored to your complaint. Responses appear directly on the physician workstation.'}
-          headerRight={
-            <Badge className="bg-slate-100 text-slate-800 border border-slate-200 text-xs font-black px-3.5 py-1.5 rounded-xl">
-              {Object.keys(aiInquiriesResponse).length} / {kioskAiInquiries.length || 3} {currentLang === 'hi' ? 'उत्तर दिए गए' : 'Answered'}
-            </Badge>
-          }
-          innerClassName="p-6 sm:p-8 space-y-6"
-        >
-
-          {isLoadingAiInquiries ? (
-            <div className="py-12 text-center space-y-3">
-              <div className="w-10 h-10 border-3 border-[#0B4C8C] border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-xs font-bold text-[#5B677E]">
-                {currentLang === 'hi' ? 'एआई नैदानिक प्रश्न तैयार किए जा रहे हैं...' : 'Generating tailored clinical inquiries...'}
-              </p>
+        <div className="space-y-5">
+          {/* 1. PROFESSIONAL CENTERED NIDAAN AI HERO PROMOTION */}
+          <div className="bg-white rounded-3xl border-2 border-[#DCE3EC] p-6 sm:p-8 shadow-xs flex flex-col items-center justify-center text-center relative overflow-hidden">
+            {/* Subtle luminous background aura */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#F5F9FF]/80 via-white to-white pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-2xl mx-auto py-1">
+              <img
+                src="/nidaan_ai_full.png"
+                alt="NIDAAN AI - Caring Intelligence. Transforming Diagnostics."
+                className="h-20 sm:h-28 md:h-32 w-auto object-contain transition-transform duration-300 hover:scale-[1.02] drop-shadow-xs"
+                onError={(e) => { e.currentTarget.src = '/nidaan_ai_logo.png'; }}
+              />
             </div>
-          ) : (
-            <div className="space-y-5">
-              {(kioskAiInquiries.length > 0 ? kioskAiInquiries : [
-                {
-                  id: 'inq_1',
-                  questionHi: 'क्या भोजन करने के 2-3 घंटे बाद सीने या पेट में खट्टी जलन (परिणामशूल) बढ़ जाती है?',
-                  questionEn: 'Does sour burning in chest or stomach worsen 2-3 hours after meals (Parinama Shula)?',
-                  optionsHi: ['हाँ, भोजन के 2-3 घंटे बाद तेज जलन होती है', 'कभी-कभी हल्का महसूस होता है', 'नहीं, ऐसा नहीं होता'],
-                  optionsEn: ['Yes, severe post-meal burning', 'Occasionally mild', 'No, not at all'],
-                  clinicalReason: 'Differentiates Pachakagni Vidaha from Koshtha Vata'
-                },
-                {
-                  id: 'inq_2',
-                  questionHi: 'क्या प्रातःकाल सोकर उठने पर मुँह का स्वाद कड़वा (तिक्त) अथवा खट्टा (अम्ल) रहता है?',
-                  questionEn: 'Is your mouth taste bitter or sour upon waking up in the morning?',
-                  optionsHi: ['हाँ, कड़वा व खट्टा स्वाद रहता है', 'मुँह सूखा या फीका रहता है', 'सामान्य रहता है'],
-                  optionsEn: ['Yes, bitter or sour taste', 'Dry or tasteless', 'Normal mouth taste'],
-                  clinicalReason: 'Identifies Pitta-dominant vs Kapha-dominant Amlapitta'
-                },
-                {
-                  id: 'inq_3',
-                  questionHi: 'क्या रात को देर से भोजन करने अथवा अत्यधिक मिर्च, खटाई या तली हुई चीजें खाने का अभ्यास है?',
-                  questionEn: 'Do you frequently have late-night dinners or consume spicy, sour, fried food?',
-                  optionsHi: ['हाँ, अक्सर देर रात भोजन व मसालेदार खाना होता है', 'सप्ताह में 1-2 बार कभी-कभार', 'नहीं, सादा व समय पर भोजन लेता हूँ'],
-                  optionsEn: ['Yes, regular late meals & spicy foods', '1-2 times a week', 'No, simple diet on time'],
-                  clinicalReason: 'Pinpoints primary dietary Hetu (Vidahi & Guru Ahara)'
-                }
-              ]).map((inq, idx) => {
-                const recordedAnswer = aiInquiriesResponse[inq.id]?.answer;
-                const opts = currentLang === 'hi' ? inq.optionsHi : inq.optionsEn;
+          </div>
 
-                return (
-                  <div key={inq.id} className="p-5 rounded-2xl bg-slate-50/70 border-2 border-[#DCE3EC] space-y-3 hover:border-indigo-300 transition-all">
-                    <div className="flex items-start gap-3">
-                      <span className="w-7 h-7 rounded-xl bg-[#0B4C8C] text-white text-xs font-mono font-bold flex items-center justify-center shrink-0 mt-0.5">
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <h4 className="text-sm sm:text-base font-black text-[#16213A] leading-snug">
-                          {currentLang === 'hi' ? inq.questionHi : inq.questionEn}
-                        </h4>
-                        <p className="text-xs text-[#5B677E] italic mt-0.5">
-                          {currentLang === 'hi' ? inq.questionEn : inq.questionHi}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 pl-10">
-                      {opts?.map((opt) => {
-                        const isChosen = recordedAnswer === opt;
-                        return (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => {
-                              const updated = {
-                                ...aiInquiriesResponse,
-                                [inq.id]: {
-                                  questionHi: inq.questionHi,
-                                  questionEn: inq.questionEn,
-                                  answer: opt,
-                                  clinicalReason: inq.clinicalReason
-                                }
-                              };
-                              const activeList = kioskAiInquiries.length > 0 ? kioskAiInquiries : [inq];
-                              const updatedInquiries = activeList.map(item => {
-                                const ans = item.id === inq.id ? opt : (aiInquiriesResponse[item.id]?.answer || null);
-                                return {
-                                  id: item.id,
-                                  questionHi: item.questionHi,
-                                  questionEn: item.questionEn,
-                                  patientAnswer: ans,
-                                  clinicalReason: item.clinicalReason
-                                };
-                              });
-
-                              setAiInquiriesResponse(updated);
-                              setIntakeData(prev => ({
-                                ...prev,
-                                aiInquiriesResponse: updated,
-                                kioskInquiries: updatedInquiries
-                              }));
-                              voiceAssistant.playAudioCue('beep');
-                              if (voiceEnabled) {
-                                voiceAssistant.speak(opt);
-                              }
-                            }}
-                            className={`p-3.5 rounded-xl text-left text-xs font-bold border-2 transition-all cursor-pointer flex items-center justify-between ${
-                              isChosen
-                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm font-black'
-                                : 'bg-white hover:bg-indigo-50/60 text-[#16213A] border-[#DCE3EC]'
-                            }`}
-                          >
-                            <span>{opt}</span>
-                            {isChosen && <CheckCircle2 size={16} className="text-white shrink-0 ml-1.5" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Action Button to Next Tab */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#DCE3EC]">
-                <button
-                  type="button"
-                  onClick={() => setActiveIntakeTab('hpi')}
-                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
-                >
-                  ← {currentLang === 'hi' ? 'मुख्य समस्या पर लौटें' : 'Back to HPI'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveIntakeTab('past_history')}
-                  className="px-6 py-2.5 rounded-xl bg-[#0B4C8C] hover:bg-[#072d54] text-white text-xs font-black shadow-md flex items-center gap-2 cursor-pointer transition-all"
-                >
-                  <span>{currentLang === 'hi' ? 'आगे बढ़ें: पुराना इतिहास व एलर्जी →' : 'Proceed to Past History →'}</span>
-                </button>
+          {!selectedComplaint ? (
+            /* No Symptom Selected Yet Prompt */
+            <div className="bg-white rounded-3xl border-2 border-[#DCE3EC] p-8 sm:p-12 text-center space-y-5 shadow-xs">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 text-[#0B4C8C] flex items-center justify-center mx-auto border-2 border-blue-100 shadow-xs">
+                <Stethoscope size={32} />
+              </div>
+              <div className="max-w-md mx-auto space-y-1.5">
+                <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: "'Fraunces', serif" }}>
+                  {currentLang === 'hi' ? 'कृपया पहले अपनी मुख्य समस्या चुनें' : 'Please Select Chief Symptom First'}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                  {currentLang === 'hi'
+                    ? 'निदान एआई आपकी समस्या के अनुसार ५ विशिष्ट नैदानिक प्रश्न तैयार करेगा।'
+                    : 'NIDAAN AI will generate 5 targeted diagnostic assessment questions for your specific condition.'}
+                </p>
+              </div>
+              <Button
+                onClick={() => setActiveIntakeTab('hpi')}
+                className="bg-[#0B4C8C] hover:bg-[#072d54] text-white font-black px-6 py-2.5 rounded-2xl text-xs sm:text-sm cursor-pointer shadow-md inline-flex items-center gap-2"
+              >
+                <span>{currentLang === 'hi' ? '← चरण 1 : समस्या चुनें' : '← Step 1: Select Symptom'}</span>
+                <ArrowRight size={16} />
+              </Button>
+            </div>
+          ) : isLoadingAiInquiries ? (
+            /* Loading State */
+            <div className="bg-white rounded-3xl border-2 border-[#DCE3EC] p-12 text-center space-y-4 shadow-xs">
+              <div className="w-12 h-12 border-4 border-[#0B4C8C] border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <div className="space-y-1">
+                <p className="text-base font-black text-slate-900">
+                  {currentLang === 'hi' ? 'NIDAAN AI नैदानिक प्रश्न तैयार कर रहा है...' : 'NIDAAN AI is generating tailored clinical inquiries...'}
+                </p>
+                <p className="text-xs text-slate-500 font-medium">
+                  {currentLang === 'hi' ? 'आयुष ज्ञानकोश एवं लक्षण विश्लेषण लोड हो रहा है' : 'Synthesizing symptom pathology and dosha markers'}
+                </p>
               </div>
             </div>
-          )}
+          ) : (
+            /* ACTIVE 5-QUESTION CLINICAL ASSESSMENT FLOW (MATCHING REFERENCE DESIGN) */
+            <div className="space-y-4">
+              {(() => {
+                const activeList = kioskAiInquiries.length > 0 ? kioskAiInquiries : [
+                  {
+                    id: 'inq_1',
+                    questionHi: 'पीठ अथवा कमर के दर्द की प्रकृति और फैलाव का सबसे सटीक वर्णन क्या है?',
+                    questionEn: 'What best describes the nature and radiation of your back or lumbar pain?',
+                    optionsHi: [
+                      'कमर से शुरू होकर पैरों में घुटने के नीचे तक तेज खिंचाव व झुनझुनी वाला दर्द (Sciatica / Gridhrasi)',
+                      'निचली पीठ में केवल स्थानीय भारीपन व जकड़न (Local Lumbar Strain / Katigraha)',
+                      'रीढ़ की हड्डी में जलन व लगातार चुभन वाला तेज दर्द (Vata-Pitta Spasm)',
+                      'उठने-बैठने पर अचानक बिजली जैसा झटका या सुई चुभने जैसी सनसनाहट'
+                    ],
+                    optionsEn: [
+                      'Sharp shooting pain radiating down one or both legs past the knee (Sciatica / Gridhrasi)',
+                      'Dull localized lower back ache and stiffness with no leg radiation (Katigraha)',
+                      'Deep burning and constant throbbing ache along spinal column (Vata-Pitta)',
+                      'Sudden electric shock sensation or needle-like prick upon movement'
+                    ],
+                    clinicalReason: 'Differentiates lumbar radiculopathy from localized Katigraha'
+                  }
+                ];
 
-        </NidanAiCard>
+                const currentInquiry = activeList[Math.min(currentAiInqIndex, activeList.length - 1)] || activeList[0];
+                const activeOptions = currentLang === 'hi'
+                  ? (currentInquiry.optionsHi || currentInquiry.optionsEn || [])
+                  : (currentInquiry.optionsEn || currentInquiry.optionsHi || []);
+                const recordedResponse = aiInquiriesResponse[currentInquiry.id]?.answer;
+                const totalQuestions = activeList.length;
+                const answeredCount = activeList.filter(item => aiInquiriesResponse[item.id]?.answer).length;
+
+                return (
+                  <div className="space-y-4">
+                    {/* Top Symptom Bar & Question Counter */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border-2 border-[#DCE3EC] shadow-2xs">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <div className="px-4 py-1.5 rounded-full bg-slate-900 text-white font-black text-xs sm:text-sm tracking-wide shadow-xs flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                          <span>
+                            {currentLang === 'hi' 
+                              ? (intakeData.complaintLabelHi || intakeData.complaintLabel || 'मुख्य समस्या') 
+                              : (intakeData.complaintLabel || intakeData.complaintLabelHi || 'Chief Complaint')}
+                          </span>
+                        </div>
+                        <Badge className="bg-blue-50 text-[#0B4C8C] border border-blue-200 text-xs font-black px-3 py-1 rounded-xl">
+                          {currentLang === 'hi'
+                            ? `प्रश्न ${currentAiInqIndex + 1} / ${totalQuestions}`
+                            : `Question ${currentAiInqIndex + 1} of ${totalQuestions}`}
+                        </Badge>
+                        <Badge className="bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-xl">
+                          {answeredCount} / {totalQuestions} {currentLang === 'hi' ? 'उत्तर दिए गए' : 'Answered'}
+                        </Badge>
+                      </div>
+
+                      <Button
+                        onClick={() => {
+                          setSelectedComplaint(null);
+                          setActiveIntakeTab('hpi');
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="border-2 border-[#DCE3EC] hover:border-slate-400 text-[#16213A] rounded-xl text-xs font-black h-9 px-3.5 cursor-pointer shadow-2xs shrink-0"
+                      >
+                        <ChevronLeft size={14} className="mr-1" />
+                        <span>{currentLang === 'hi' ? '← लक्षण बदलें' : '← Change Symptom'}</span>
+                      </Button>
+                    </div>
+
+                    {/* MAIN CLINICAL ASSESSMENT CARD (MATCHING REFERENCE DESIGN) */}
+                    <motion.div
+                      key={currentInquiry.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white rounded-3xl border-2 border-[#DCE3EC] p-6 sm:p-8 shadow-xs space-y-6"
+                    >
+                      {/* Question Header & Speaker Button */}
+                      <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5">
+                        <div className="space-y-2">
+                          <span className="inline-block text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-lg bg-blue-50 text-[#0B4C8C] border border-blue-200/80">
+                            CLINICAL ASSESSMENT {currentAiInqIndex + 1}
+                          </span>
+                          <h3 
+                            className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug"
+                            style={{ fontFamily: "'Fraunces', serif" }}
+                          >
+                            {currentLang === 'hi' ? currentInquiry.questionHi : currentInquiry.questionEn}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-slate-500 font-medium italic">
+                            {currentLang === 'hi' ? currentInquiry.questionEn : currentInquiry.questionHi}
+                          </p>
+                        </div>
+
+                        {/* Speaker Voice Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const qText = currentLang === 'hi' ? currentInquiry.questionHi : currentInquiry.questionEn;
+                            voiceAssistant.speak(qText);
+                          }}
+                          title={currentLang === 'hi' ? 'प्रश्न सुनें' : 'Listen to Question'}
+                          className="w-12 h-12 rounded-2xl bg-amber-50 hover:bg-amber-100 text-[#E2861E] border-2 border-amber-200/80 flex items-center justify-center shrink-0 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                        >
+                          <Volume2 size={24} />
+                        </button>
+                      </div>
+
+                      {/* 2x2 GRID OF CLINICAL OPTION CARDS */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {activeOptions.map((optionText, optIdx) => {
+                          const isSelected = recordedResponse === optionText;
+
+                          return (
+                            <motion.button
+                              key={optIdx}
+                              whileHover={{ scale: 1.015 }}
+                              whileTap={{ scale: 0.985 }}
+                              type="button"
+                              onClick={() => {
+                                voiceAssistant.playAudioCue('beep');
+                                const updatedResponses = {
+                                  ...aiInquiriesResponse,
+                                  [currentInquiry.id]: {
+                                    questionHi: currentInquiry.questionHi,
+                                    questionEn: currentInquiry.questionEn,
+                                    answer: optionText,
+                                    clinicalReason: currentInquiry.clinicalReason
+                                  }
+                                };
+                                const updatedInquiries = activeList.map(item => {
+                                  const ans = item.id === currentInquiry.id ? optionText : (aiInquiriesResponse[item.id]?.answer || null);
+                                  return {
+                                    id: item.id,
+                                    questionHi: item.questionHi,
+                                    questionEn: item.questionEn,
+                                    patientAnswer: ans,
+                                    clinicalReason: item.clinicalReason
+                                  };
+                                });
+
+                                setAiInquiriesResponse(updatedResponses);
+                                setIntakeData(prev => ({
+                                  ...prev,
+                                  aiInquiriesResponse: updatedResponses,
+                                  kioskAiInquiries: activeList,
+                                  kioskInquiries: updatedInquiries
+                                }));
+
+                                if (voiceEnabled) {
+                                  voiceAssistant.speak(optionText);
+                                }
+
+                                // Smooth auto-advance to next inquiry after 350ms
+                                if (currentAiInqIndex < totalQuestions - 1) {
+                                  setTimeout(() => {
+                                    setCurrentAiInqIndex(prev => prev + 1);
+                                  }, 350);
+                                }
+                              }}
+                              className={`p-5 sm:p-6 rounded-2xl text-left border-2 transition-all flex items-center justify-between min-h-[90px] cursor-pointer shadow-xs ${
+                                isSelected
+                                  ? 'bg-[#F5F9FF] text-[#0B4C8C] border-[#0B4C8C] ring-3 ring-[#0B4C8C]/20 shadow-md'
+                                  : 'bg-white hover:bg-slate-50/90 text-slate-800 border-[#DCE3EC] hover:border-slate-300'
+                              }`}
+                            >
+                              <span className="font-extrabold text-sm sm:text-base leading-relaxed pr-3">
+                                {optionText}
+                              </span>
+
+                              {/* Circular Radio Checkbox Indicator */}
+                              {isSelected ? (
+                                <div className="w-7 h-7 rounded-full bg-[#0B4C8C] text-white flex items-center justify-center shrink-0 shadow-xs ring-2 ring-white">
+                                  <CheckCircle2 size={18} />
+                                </div>
+                              ) : (
+                                <div className="w-6 h-6 rounded-full border-2 border-slate-300 shrink-0" />
+                              )}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Clinical Reason Insight Footer */}
+                      {currentInquiry.clinicalReason && (
+                        <div className="pt-2 flex items-center gap-2 text-xs text-slate-500 font-medium">
+                          <span className="font-bold text-[#0B4C8C]">Diagnostic Value:</span>
+                          <span>{currentInquiry.clinicalReason}</span>
+                        </div>
+                      )}
+
+                      {/* STEPPER NAVIGATION CONTROLS */}
+                      <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        {/* Prev Button */}
+                        <Button
+                          variant="outline"
+                          disabled={currentAiInqIndex === 0}
+                          onClick={() => setCurrentAiInqIndex(prev => Math.max(0, prev - 1))}
+                          className="border-2 border-[#DCE3EC] text-slate-700 hover:bg-slate-50 rounded-xl h-11 px-5 text-xs font-bold w-full sm:w-auto cursor-pointer"
+                        >
+                          <ChevronLeft size={16} className="mr-1" />
+                          <span>{currentLang === 'hi' ? 'पिछला प्रश्न' : 'Previous Inquiry'}</span>
+                        </Button>
+
+                        {/* Step Dots */}
+                        <div className="flex items-center gap-2">
+                          {activeList.map((q, idx) => {
+                            const isAnswered = !!aiInquiriesResponse[q.id]?.answer;
+                            const isCurrent = idx === currentAiInqIndex;
+
+                            return (
+                              <button
+                                key={q.id || idx}
+                                type="button"
+                                onClick={() => setCurrentAiInqIndex(idx)}
+                                className={`w-8 h-8 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer ${
+                                  isCurrent
+                                    ? 'bg-[#0B4C8C] text-white shadow-xs scale-110'
+                                    : isAnswered
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                                }`}
+                              >
+                                {idx + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Next / Complete Button */}
+                        {currentAiInqIndex < totalQuestions - 1 ? (
+                          <Button
+                            onClick={() => setCurrentAiInqIndex(prev => prev + 1)}
+                            className="bg-[#0B4C8C] hover:bg-[#072d54] text-white rounded-xl h-11 px-6 text-xs font-black shadow-md w-full sm:w-auto cursor-pointer flex items-center gap-2"
+                          >
+                            <span>{currentLang === 'hi' ? 'अगला प्रश्न' : 'Next Inquiry'}</span>
+                            <ArrowRight size={16} />
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => setActiveIntakeTab('past_history')}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 px-6 text-xs font-black shadow-md w-full sm:w-auto cursor-pointer flex items-center gap-2"
+                          >
+                            <CheckCircle2 size={16} />
+                            <span>{currentLang === 'hi' ? 'मूल्यांकन पूर्ण — आगे बढ़ें →' : 'Complete Intake — Next Step →'}</span>
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* COMPLETED ASSESSMENT SUMMARY CARD (IF ALL 5 ANSWERED) */}
+                    {answeredCount >= totalQuestions && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-emerald-50/80 border-2 border-emerald-300 rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center gap-3.5 text-center sm:text-left">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <CheckCircle2 size={24} />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black text-emerald-950">
+                              {currentLang === 'hi' ? 'सभी ५ NIDAAN AI प्रश्न सफलतापूर्वक दर्ज हो चुके हैं!' : 'All 5 NIDAAN AI Inquiries Successfully Completed!'}
+                            </h4>
+                            <p className="text-xs text-emerald-800 font-medium">
+                              {currentLang === 'hi'
+                                ? 'आपके उत्तर सुरक्षित रूप से OPD चिकित्सक वर्कस्टेशन से लिंक हो गए हैं।'
+                                : 'Your responses are linked to the physician consultation report.'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={() => setActiveIntakeTab('past_history')}
+                          className="bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-md cursor-pointer shrink-0"
+                        >
+                          <span>{currentLang === 'hi' ? 'आगे बढ़ें : पुराना इतिहास →' : 'Proceed to Past History →'}</span>
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ========================================================================= */}

@@ -12,7 +12,7 @@ import {
 import { Button } from '../components/ui/button';
 import WelcomeNavbar from '../components/layout/WelcomeNavbar';
 import WelcomeFooter from '../components/shared/WelcomeFooter';
-import HandstrokeMediKiosk from '../components/shared/HandstrokeMediKiosk';
+import NidaanAiHeroReveal from '../components/shared/NidaanAiHeroReveal';
 
 // ---------------------------------------------------------------------------
 // Bilingual Content Dictionaries
@@ -405,19 +405,17 @@ export default function Welcome() {
   const isHi = currentLang === 'hi';
 
   return (
-    <div className="min-h-screen bg-[#FDFEFE] text-[#16213A] font-sans antialiased selection:bg-[#0B4C8C] selection:text-white">
+    <div className="min-h-screen bg-white text-[#16213A] font-sans antialiased selection:bg-[#0B4C8C] selection:text-white">
       
       {/* 1. DEDICATED PROMOTIONAL NAVBAR */}
       <WelcomeNavbar currentLang={currentLang} onLangChange={handleLangChange} />
 
       {/* ============================ HERO SECTION ============================ */}
-      <section id="overview" className="relative overflow-hidden border-b border-[#DCE3EC] bg-gradient-to-b from-[#F5F9FF] via-white to-[#F5F9FF]">
-        {/* Subtle Decorative Grid & Glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(#0B4C8C_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.035] pointer-events-none" />
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+      <section id="overview" className="relative overflow-hidden border-b border-[#DCE3EC] bg-white">
+        {/* Subtle Decorative Grid */}
+        <div className="absolute inset-0 bg-[radial-gradient(#0B4C8C_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.025] pointer-events-none" />
 
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-10 pb-16 md:pt-16 md:pb-24">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-8 pb-16 md:pt-12 md:pb-24">
           <motion.div
             className="space-y-8 text-center flex flex-col items-center"
             initial={reduceMotion ? false : 'hidden'}
@@ -427,12 +425,12 @@ export default function Welcome() {
               visible: { transition: { staggerChildren: 0.08 } },
             }}
           >
-            {/* Prominent Internet-Inspired Handstroke Calligraphy Branding */}
+            {/* High-Impact Animated NIDAAN AI Official Brand Reveal */}
             <motion.div
               variants={{ hidden: { opacity: 0, y: -10 }, visible: { opacity: 1, y: 0 } }}
-              className="w-full flex justify-center -mb-2 sm:-mb-3"
+              className="w-full flex justify-center -mb-1 sm:-mb-2"
             >
-              <HandstrokeMediKiosk className="max-w-xl sm:max-w-2xl" currentLang={currentLang} />
+              <NidaanAiHeroReveal currentLang={currentLang} />
             </motion.div>
 
             {/* Main Headline */}
@@ -443,12 +441,12 @@ export default function Welcome() {
             >
               {isHi ? (
                 <>
-                  अपनी स्वास्थ्य समस्या बताएं, <br />
+                  अपनी स्वास्थ्य समस्या <span className="text-cyan-700">NIDAAN AI</span> को बताएं, <br />
                   <span className="text-[#0B4C8C]">डॉक्टर कक्ष में जाने से पहले।</span>
                 </>
               ) : (
                 <>
-                  Tell your clinical story once, <br />
+                  Tell your clinical story to <span className="text-cyan-700">AI</span> once, <br />
                   <span className="text-[#0B4C8C]">before you sit with the doctor.</span>
                 </>
               )}
@@ -460,8 +458,8 @@ export default function Welcome() {
               className="text-base sm:text-lg md:text-xl text-[#4B586E] leading-relaxed max-w-3xl mx-auto font-normal"
             >
               {isHi
-                ? 'मेडीकियोस्क आपकी अपनी भाषा में बातचीत करता है, वात-पित्त-कफ प्रकृति का विश्लेषण करता है और पुराने पर्चों को स्कैन कर डॉक्टर के लिए संपूर्ण क्लिनिकल रिपोर्ट तैयार कर देता है — जिससे 2 मिनट की ओपीडी में पूरा ध्यान आपके इलाज पर रहे।'
-                : 'MediKiosk listens in Hindi & English, analyzes your unique Vata-Pitta-Kapha Prakriti, and converts handwritten prescriptions into structured digital timelines — turning rushed 2-minute OPD visits into deep, focused clinical consultations.'}
+                ? 'NIDAAN AI द्वारा संचालित, मेडीकियोस्क आपकी अपनी भाषा में बातचीत करता है, वात-पित्त-कफ प्रकृति का विश्लेषण करता है और पुराने पर्चों को स्कैन कर डॉक्टर के लिए संपूर्ण क्लिनिकल रिपोर्ट तैयार कर देता है — जिससे 2 मिनट की ओपीडी में पूरा ध्यान आपके इलाज पर रहे।'
+                : 'Powered by NIDAAN AI, MediKiosk listens in Hindi & English, analyzes your unique Vata-Pitta-Kapha Prakriti, and converts handwritten prescriptions into structured digital timelines — turning rushed 2-minute OPD visits into deep, focused clinical consultations.'}
             </motion.p>
 
             {/* Primary CTAs */}

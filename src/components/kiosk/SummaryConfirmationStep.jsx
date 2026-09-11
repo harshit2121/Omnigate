@@ -126,12 +126,25 @@ export default function SummaryConfirmationStep({
                 <span className="text-[11px] font-bold text-[#5B677E] uppercase tracking-wider">
                   {isHi ? 'मरीज विवरण' : 'Patient Demographics'}
                 </span>
-                <Badge className="bg-white text-[#0B4C8C] border border-[#BFD3E8] text-[10px] font-bold">ABHA Linked</Badge>
+                {patientData.abhaId ? (
+                  <Badge className="bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-bold">ABHA Linked</Badge>
+                ) : (
+                  <Badge className="bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold">
+                    {isHi ? 'सीधा पंजीकरण' : 'Direct Registration'}
+                  </Badge>
+                )}
               </div>
-              <p className="text-base font-extrabold text-[#16213A]">{patientData.name || 'Sunita Devi'}</p>
-              <p className="text-xs text-[#37455A]">ABHA ID: <span className="font-mono text-[#0B4C8C] font-bold">{patientData.abhaId || '91-8472-1092-4820'}</span></p>
+              <p className="text-base font-extrabold text-[#16213A]">{patientData.name || (isHi ? 'मरीज' : 'Patient')}</p>
+              <p className="text-xs text-[#37455A]">
+                ABHA ID:{' '}
+                {patientData.abhaId ? (
+                  <span className="font-mono text-[#0B4C8C] font-bold">{patientData.abhaId}</span>
+                ) : (
+                  <span className="text-slate-500 italic">{isHi ? 'लिंक नहीं है (वैकल्पिक)' : 'Not Linked (Optional)'}</span>
+                )}
+              </p>
               <p className="text-xs text-[#5B677E] font-medium">
-                {patientData.age || '52'} {isHi ? 'वर्ष' : 'Years'} • {patientData.gender === 'Female' ? (isHi ? 'महिला' : 'Female') : (isHi ? 'पुरुष' : 'Male')} {patientData.phone && `• ${patientData.phone}`}
+                {patientData.age ? `${patientData.age} ${isHi ? 'वर्ष' : 'Years'}` : ''} {patientData.gender ? `• ${patientData.gender === 'Female' ? (isHi ? 'महिला' : 'Female') : (isHi ? 'पुरुष' : 'Male')}` : ''} {patientData.phone && `• ${patientData.phone}`}
               </p>
             </div>
 
@@ -144,7 +157,7 @@ export default function SummaryConfirmationStep({
                 <Badge className="bg-white text-[#E2861E] border border-[#FED7AA] text-[10px] font-bold">SOCRATES</Badge>
               </div>
               <p className="text-base font-extrabold text-[#16213A]">
-                {isHi ? (intakeData.complaintLabelHi || intakeData.complaintLabel || 'अम्लपित्त एवं उदर शूल') : (intakeData.complaintLabel || 'Amlapitta & Severe Epigastric Burning')}
+                {isHi ? (intakeData.complaintLabelHi || intakeData.complaintLabel || 'लक्षण') : (intakeData.complaintLabel || 'Symptom')}
               </p>
               <div className="text-xs text-[#37455A] space-y-1 font-medium">
                 {Object.entries(intakeData.answers || {}).slice(0, 3).map(([key, val]) => (
@@ -159,31 +172,46 @@ export default function SummaryConfirmationStep({
                 <span className="text-[11px] font-bold text-[#5B677E] uppercase tracking-wider">
                   {isHi ? 'आयुर्वेदिक प्रकृति व अग्नि' : 'Ayush Constitution & Agni'}
                 </span>
-                <Badge className="bg-white text-amber-800 border border-amber-200 text-[10px] font-bold">AIIA Assessment</Badge>
+                <Badge className="bg-white text-amber-800 border border-amber-200 text-[10px] font-bold">Dr. Sumendra Mishra CCRAS</Badge>
               </div>
               <p className="text-sm font-bold text-[#16213A]">
-                {isHi ? 'प्रकृति:' : 'Prakriti:'} <span className="text-[#E2861E] font-extrabold">{parikshaData?.prakritiResult?.dominant || (isHi ? 'पित्त-वात (Pittadhika)' : 'Pitta-Vata (Pittadhika)')}</span>
+                {isHi ? 'प्रकृति:' : 'Prakriti:'} <span className="text-[#0B4C8C] font-extrabold">{parikshaData?.prakritiResult?.dominant || (isHi ? 'समान दोष (त्रिदोषज)' : 'Sama Dosha (Tridoshaja)')}</span>
               </p>
               <p className="text-xs text-[#37455A] font-medium">
-                {isHi ? 'अग्नि:' : 'Agni:'} <b className="capitalize text-[#16213A]">{parikshaData.agni || 'Tikshna'}</b> • {isHi ? 'कोष्ठ:' : 'Koshtha:'} <b className="capitalize text-[#16213A]">{parikshaData.koshtha || 'Krura'}</b>
+                {isHi ? 'अग्नि:' : 'Agni:'} <b className="capitalize text-[#16213A]">{parikshaData.agni || (parikshaData?.prakritiResult?.agni || 'Sama')}</b> • {isHi ? 'कोष्ठ:' : 'Koshtha:'} <b className="capitalize text-[#16213A]">{parikshaData.koshtha || (parikshaData?.prakritiResult?.koshtha || 'Madhyama')}</b>
               </p>
             </div>
 
             {/* Digitized Records */}
-            <div className="bg-[#F5F9FF] p-4 rounded-2xl border border-[#DCE3EC] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#5B677E] uppercase tracking-wider">
-                  {isHi ? 'दस्तावेज व लैब रिपोर्ट' : 'Medical Timeline'}
-                </span>
-                <Badge className="bg-white text-emerald-800 border border-emerald-200 text-[10px] font-bold">OCR Processed</Badge>
-              </div>
-              <p className="text-sm font-bold text-[#16213A]">
-                {ocrDocuments?.length || 2} {isHi ? 'दस्तावेज संलग्न' : 'Prescription Records Attached'}
-              </p>
-              <p className="text-xs text-[#5B677E] font-medium">
-                {isHi ? 'क्लिनिकल विवरण सत्यापित व ईएमआर से सिंक' : 'Clinical entities verified & synced with hospital OPD'}
-              </p>
-            </div>
+            {(() => {
+              const docCount = Array.isArray(ocrDocuments) ? ocrDocuments.length : (intakeData?.ocrDocuments?.length || 0);
+              return (
+                <div className="bg-[#F5F9FF] p-4 rounded-2xl border border-[#DCE3EC] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-[#5B677E] uppercase tracking-wider">
+                      {isHi ? 'दस्तावेज व लैब रिपोर्ट' : 'Medical Timeline'}
+                    </span>
+                    {docCount > 0 ? (
+                      <Badge className="bg-white text-emerald-800 border border-emerald-200 text-[10px] font-bold">OCR Processed</Badge>
+                    ) : (
+                      <Badge className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold">
+                        {isHi ? 'दस्तावेज रहित' : 'Direct Entry'}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm font-bold text-[#16213A]">
+                    {docCount > 0
+                      ? `${docCount} ${isHi ? 'दस्तावेज संलग्न' : 'Prescription Records Attached'}`
+                      : (isHi ? 'कोई पूर्व दस्तावेज संलग्न नहीं' : 'No Prior Records Uploaded')}
+                  </p>
+                  <p className="text-xs text-[#5B677E] font-medium">
+                    {docCount > 0
+                      ? (isHi ? 'क्लिनिकल विवरण सत्यापित व ईएमआर से सिंक' : 'Clinical entities verified & synced with hospital OPD')
+                      : (isHi ? 'प्रत्यक्ष परामर्श पंजीकरण' : 'Direct OPD registration without prior records')}
+                  </p>
+                </div>
+              );
+            })()}
 
           </div>
 
@@ -310,29 +338,34 @@ export default function SummaryConfirmationStep({
                   </div>
                   <div className="flex justify-between font-bold">
                     <span>ABHA ID (ABDM):</span>
-                    <span className="font-mono">{patientData.abhaId || '91-8472-1092-4820'}</span>
+                    <span className="font-mono">{patientData.abhaId || 'NOT LINKED'}</span>
                   </div>
                 </div>
 
                 {/* Ayush Clinical Synthesis Box */}
-                <div className="text-[10.5px] space-y-1 py-2 border-b-2 border-dashed border-black">
-                  <p className="font-black uppercase text-[10px] tracking-wider text-black">
-                    [ AYUSH CLINICAL INTAKE SUMMARY ]
-                  </p>
-                  <div>
-                    <span className="font-bold">CHIEF COMPLAINT:</span>{' '}
-                    <span className="font-semibold">{intakeData.complaintLabel || 'Amlapitta & Severe Epigastric Pain'}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">PRAKRITI (प्रकृति):</span>{' '}
-                    <span className="font-bold underline">{parikshaData?.prakritiResult?.dominant || 'Pitta-Vata (Pittadhika)'}</span>
-                  </div>
-                  <div className="flex justify-between text-[10px]">
-                    <span>AGNI: <b>{parikshaData.agni || 'Tikshna'}</b></span>
-                    <span>KOSHTHA: <b>{parikshaData.koshtha || 'Krura'}</b></span>
-                    <span>DOCS: <b>{ocrDocuments?.length || 2} Synced</b></span>
-                  </div>
-                </div>
+                {(() => {
+                  const docCount = Array.isArray(ocrDocuments) ? ocrDocuments.length : (intakeData?.ocrDocuments?.length || 0);
+                  return (
+                    <div className="text-[10.5px] space-y-1 py-2 border-b-2 border-dashed border-black">
+                      <p className="font-black uppercase text-[10px] tracking-wider text-black">
+                        [ AYUSH CLINICAL INTAKE SUMMARY ]
+                      </p>
+                      <div>
+                        <span className="font-bold">CHIEF COMPLAINT:</span>{' '}
+                        <span className="font-semibold">{intakeData.complaintLabel || 'Not specified'}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold">PRAKRITI (प्रकृति):</span>{' '}
+                        <span className="font-bold underline">{parikshaData?.prakritiResult?.dominant || 'Sama Dosha (Tridoshaja)'}</span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span>AGNI: <b>{parikshaData.agni || (parikshaData?.prakritiResult?.agni || 'Sama')}</b></span>
+                        <span>KOSHTHA: <b>{parikshaData.koshtha || (parikshaData?.prakritiResult?.koshtha || 'Madhyama')}</b></span>
+                        <span>DOCS: <b>{docCount > 0 ? `${docCount} Synced` : '0 (Direct)'}</b></span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* QR Code & ABDM Digital Verification */}
                 <div className="py-3 flex items-center justify-between gap-3 border-b-2 border-dashed border-black">
